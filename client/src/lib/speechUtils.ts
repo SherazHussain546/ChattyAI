@@ -62,25 +62,36 @@ export class SpeechHandler {
     }
   }
 
-  speak(text: string): boolean {
-    if (!this.synthesis) {
-      console.error('Speech synthesis not supported in this browser');
-      return false;
-    }
+  speak(text: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (!this.synthesis) {
+        console.error('Speech synthesis not supported in this browser');
+        resolve(false);
+        return;
+      }
 
-    try {
-      // Cancel any ongoing speech
-      this.synthesis.cancel();
+      try {
+        // Cancel any ongoing speech
+        this.synthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      this.synthesis.speak(utterance);
-      return true;
-    } catch (error) {
-      console.error('Failed to synthesize speech:', error);
-      return false;
-    }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+
+        utterance.onend = () => {
+          resolve(true);
+        };
+
+        utterance.onerror = () => {
+          resolve(false);
+        };
+
+        this.synthesis.speak(utterance);
+      } catch (error) {
+        console.error('Failed to synthesize speech:', error);
+        resolve(false);
+      }
+    });
   }
 
   isRecognitionSupported(): boolean {

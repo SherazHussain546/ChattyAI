@@ -27,19 +27,19 @@ export default function Home() {
       const res = await apiRequest('POST', '/api/messages', { content, role: 'user' });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
 
       if (preferences?.voiceEnabled) {
         setIsSpeaking(true);
-        if (!speechHandler.speak(data.aiMessage.content)) {
+        const success = await speechHandler.speak(data.aiMessage.content);
+        if (!success) {
           toast({
             description: "Speech synthesis failed. Voice response disabled.",
             variant: "destructive"
           });
         }
-        // Set a reasonable timeout for speaking to complete
-        setTimeout(() => setIsSpeaking(false), 3000);
+        setIsSpeaking(false);
       }
     },
     onError: () => {
@@ -68,10 +68,16 @@ export default function Home() {
     if (isListening) {
       speechHandler.stopListening();
       setIsListening(false);
+      toast({
+        description: "Stopped listening",
+      });
     } else {
       const started = speechHandler.startListening((text) => {
         handleSendMessage(text);
         setIsListening(false);
+        toast({
+          description: "Message received from speech",
+        });
       });
 
       if (!started) {
@@ -81,17 +87,26 @@ export default function Home() {
         });
       } else {
         setIsListening(true);
+        toast({
+          description: "Listening for speech...",
+        });
       }
     }
-  }, [isListening]);
+  }, [isListening, toast]);
 
   const toggleVoice = useCallback(() => {
     if (preferences) {
       updatePreferences.mutate({
         voiceEnabled: preferences.voiceEnabled ? 0 : 1
       });
+
+      toast({
+        description: preferences.voiceEnabled ? 
+          "Voice responses disabled" : 
+          "Voice responses enabled"
+      });
     }
-  }, [preferences, updatePreferences]);
+  }, [preferences, updatePreferences, toast]);
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
