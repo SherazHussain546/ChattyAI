@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { VoiceControls } from '@/components/VoiceControls';
@@ -25,8 +25,14 @@ export default function Home() {
       const res = await apiRequest('POST', '/api/messages', { content, role: 'user' });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+
+      if (preferences?.voiceEnabled) {
+        setIsSpeaking(true);
+        speechHandler.speak(data.aiMessage.content);
+        setTimeout(() => setIsSpeaking(false), 3000); // Increased timeout for longer messages
+      }
     }
   });
 
@@ -40,14 +46,8 @@ export default function Home() {
     }
   });
 
-  const handleSendMessage = async (content: string) => {
-    const result = await sendMessage.mutateAsync(content);
-    
-    if (preferences?.voiceEnabled) {
-      setIsSpeaking(true);
-      speechHandler.speak(result.aiMessage.content);
-      setTimeout(() => setIsSpeaking(false), 1000);
-    }
+  const handleSendMessage = (content: string) => {
+    sendMessage.mutate(content);
   };
 
   const toggleListening = () => {
@@ -64,15 +64,17 @@ export default function Home() {
   };
 
   const toggleVoice = () => {
-    updatePreferences.mutate({
-      voiceEnabled: preferences?.voiceEnabled ? 0 : 1
-    });
+    if (preferences) {
+      updatePreferences.mutate({
+        voiceEnabled: preferences.voiceEnabled ? 0 : 1
+      });
+    }
   };
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-4xl font-bold text-center mb-8">AI Chat Assistant</h1>
-      
+
       <div className="grid md:grid-cols-2 gap-8">
         <div>
           <Avatar speaking={isSpeaking} />
@@ -83,7 +85,7 @@ export default function Home() {
             onToggleVoice={toggleVoice}
           />
         </div>
-        
+
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}

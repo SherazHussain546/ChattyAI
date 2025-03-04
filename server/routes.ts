@@ -2,9 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertMessageSchema, insertPreferencesSchema } from "@shared/schema";
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getChatResponse } from "@/lib/openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get chat history
@@ -16,27 +14,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add new message and get AI response
   app.post("/api/messages", async (req, res) => {
     const messageData = insertMessageSchema.parse(req.body);
-    
+
     // Store user message
     const userMessage = await storage.addMessage({
       content: messageData.content,
       role: "user"
     });
 
-    // Get AI response
-    const completion = await openai.chat.completions.create({
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-      model: "gpt-4o",
-      messages: [{ role: "user", content: messageData.content }],
-    });
+    try {
+      // Get AI response using our centralized OpenAI handler
+      const aiResponse = await getChatResponse(messageData.content);
 
-    // Store AI response
-    const aiMessage = await storage.addMessage({
-      content: completion.choices[0].message.content || "I'm not sure how to respond to that.",
-      role: "assistant"
-    });
+      // Store AI response
+      const aiMessage = await storage.addMessage({
+        content: aiResponse,
+        role: "assistant"
+      });
 
-    res.json({ userMessage, aiMessage });
+      res.json({ userMessage, aiMessage });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      res.status(500).json({ message: 'Failed to get AI response' });
+    }
   });
 
   // Get user preferences
