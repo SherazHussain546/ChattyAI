@@ -1,0 +1,57 @@
+Building a ChatGPT Clone with Talking Avatar & Database
+
+"I want to develop a ChatGPT clone with an additional feature: a talking avatar that interacts with users via voice. The system should be able to process text inputs and respond in natural speech, while also integrating a database to store user interactions, preferences, and history. The final project should be deployable on GitHub and easily maintainable."
+🔹 Core Features:
+
+✅ ChatGPT-Like Conversational AI – The system should handle natural conversations similar to OpenAI’s ChatGPT.
+✅ Talking Avatar – A visual avatar that moves its lips and speaks while responding to users (text-to-speech & animation).
+✅ Voice Input & Output – Users should be able to talk to the chatbot using their voice, and the bot should respond with voice as well.
+✅ Database Integration – Store user interactions, chat history, and preferences.
+✅ GitHub Deployment – Codebase should be structured for easy deployment via GitHub.
+🔹 Technical Requirements:
+1️⃣ Frontend (User Interface & Avatar)
+
+    Framework: React.js (preferred) or Next.js
+    Avatar Animation: Use Three.js, TensorFlow.js, or MediaPipe for lip-syncing animations.
+    Speech Recognition: Use Web Speech API or Deepgram API for voice input.
+    Text-to-Speech (TTS): Implement Google Text-to-Speech (TTS), ElevenLabs, or OpenAI TTS API to make the avatar talk.
+
+2️⃣ Backend (AI Processing & Database)
+
+    Framework: Flask (Python) or Express.js (Node.js)
+    Chatbot Model: Use OpenAI API (GPT-4 or GPT-3.5) for responses.
+    Voice Processing: Convert user speech to text and text responses to speech.
+    Database:
+        MongoDB (NoSQL) for chat history & user profiles
+        PostgreSQL (SQL) if structured data is preferred
+    Authentication (Optional): Add user login/signup for saving personalized chat data.
+
+3️⃣ Hosting & Deployment
+
+    GitHub Repository: Upload full project with structured documentation.
+    Backend Hosting: Deploy API on AWS, Google Cloud, or Render.
+    Frontend Hosting: Use Vercel, Netlify, or Firebase Hosting.
+    CI/CD: Automate deployment using GitHub Actions.
+
+🔹 Additional Features (Optional, If Feasible)
+
+🔸 Multimodal AI – Allow the avatar to process both text & images as inputs.
+🔸 Memory Feature – Store conversation history and allow the AI to remember past chats.
+🔸 Personalized Voices – Let users choose different voice styles for responses.
+🔸 Mobile-Friendly Design – Ensure the UI works smoothly on mobile devices.
+🔹 Goal & Deliverables:
+
+🚀 Goal: To create a ChatGPT clone with a talking avatar that responds via voice and stores user interactions in a database. The project should be fully deployable on GitHub with proper documentation.
+
+Deliverables:
+✅ A working web-based AI chatbot with a talking avatar
+✅ Integrated voice input & text-to-speech output
+✅ Database to store chat history
+✅ GitHub repository with structured code and README
+✅ Deployment instructions for hosting
+🔹 Why This Prompt is Effective?
+
+✔ Clear and detailed – Covers all technical aspects and expected features.
+✔ Structured deployment plan – Ensures it’s deployable via GitHub and cloud-hosted.
+✔ Expandable features – Allows future upgrades like memory, custom voices, and multimodal AI.
+✔ Focus on usability – Ensures a smooth user experience with an interactive avatar.
