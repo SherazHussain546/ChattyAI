@@ -1,56 +1,57 @@
 import type { Express } from "express";
-import { createServer } from "http";
-import { z } from "zod";
+import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertMessageSchema, insertPreferencesSchema } from "@shared/schema";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function registerRoutes(app: Express) {
-  const httpServer = createServer(app);
-
-  // Get chat messages
-  app.get("/api/messages", async (_req, res) => {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Get chat history
+  app.get("/api/messages", async (req, res) => {
     const messages = await storage.getMessages();
     res.json(messages);
   });
 
-  // Send message and get AI response
-  app.post("/api/chat", async (req, res) => {
-    try {
-      const schema = z.object({
-        content: z.string().min(1)
-      });
-      
-      const { content } = schema.parse(req.body);
-      
-      // Store user message
-      await storage.createMessage({
-        role: "user",
-        content,
-        sessionId: "default"
-      });
+  // Add new message and get AI response
+  app.post("/api/messages", async (req, res) => {
+    const messageData = insertMessageSchema.parse(req.body);
+    
+    // Store user message
+    const userMessage = await storage.addMessage({
+      content: messageData.content,
+      role: "user"
+    });
 
-      // Get OpenAI response
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-        messages: [{ role: "user", content }],
-      });
+    // Get AI response
+    const completion = await openai.chat.completions.create({
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+      model: "gpt-4o",
+      messages: [{ role: "user", content: messageData.content }],
+    });
 
-      const aiResponse = response.choices[0].message.content;
+    // Store AI response
+    const aiMessage = await storage.addMessage({
+      content: completion.choices[0].message.content || "I'm not sure how to respond to that.",
+      role: "assistant"
+    });
 
-      // Store AI response
-      await storage.createMessage({
-        role: "assistant",
-        content: aiResponse,
-        sessionId: "default"
-      });
-
-      res.json({ content: aiResponse });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
+    res.json({ userMessage, aiMessage });
   });
 
+  // Get user preferences
+  app.get("/api/preferences", async (req, res) => {
+    const prefs = await storage.getPreferences();
+    res.json(prefs);
+  });
+
+  // Update user preferences
+  app.patch("/api/preferences", async (req, res) => {
+    const prefsData = insertPreferencesSchema.parse(req.body);
+    const updatedPrefs = await storage.updatePreferences(prefsData);
+    res.json(updatedPrefs);
+  });
+
+  const httpServer = createServer(app);
   return httpServer;
 }

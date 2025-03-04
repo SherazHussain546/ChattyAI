@@ -1,32 +1,45 @@
-let recognition: SpeechRecognition | null = null;
-let synthesis = window.speechSynthesis;
+export class SpeechHandler {
+  private recognition: SpeechRecognition | null = null;
+  private synthesis: SpeechSynthesis;
+  private isListening: boolean = false;
 
-export function startListening(onResult: (text: string) => void) {
-  if (!('webkitSpeechRecognition' in window)) {
-    throw new Error('Speech recognition not supported');
+  constructor() {
+    if ('webkitSpeechRecognition' in window) {
+      this.recognition = new webkitSpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+    }
+    this.synthesis = window.speechSynthesis;
   }
 
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = false;
+  startListening(onResult: (text: string) => void): void {
+    if (!this.recognition) {
+      console.error('Speech recognition not supported');
+      return;
+    }
 
-  recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    onResult(text);
-  };
+    this.recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      onResult(text);
+    };
 
-  recognition.start();
-}
+    this.recognition.start();
+    this.isListening = true;
+  }
 
-export function stopListening() {
-  recognition?.stop();
-  recognition = null;
-}
+  stopListening(): void {
+    if (this.recognition && this.isListening) {
+      this.recognition.stop();
+      this.isListening = false;
+    }
+  }
 
-export async function speak(text: string): Promise<void> {
-  return new Promise((resolve) => {
+  speak(text: string): void {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => resolve();
-    synthesis.speak(utterance);
-  });
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    this.synthesis.speak(utterance);
+  }
 }
+
+export const speechHandler = new SpeechHandler();

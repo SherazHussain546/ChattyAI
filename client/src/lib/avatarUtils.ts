@@ -1,169 +1,75 @@
 import * as THREE from 'three';
 
-// Basic expression configurations
-interface Expression {
-  mouth: {
-    scale: { x: number; y: number; z: number };
-    position: { x: number; y: number; z: number };
-  };
-  eyes: {
-    scale: { x: number; y: number };
-  };
-}
+export class AvatarRenderer {
+  private scene: THREE.Scene;
+  private camera: THREE.PerspectiveCamera;
+  private renderer: THREE.WebGLRenderer;
+  private head: THREE.Mesh;
+  private mouth: THREE.Mesh;
+  private container: HTMLElement | null = null;
 
-const expressions: Record<string, Expression> = {
-  neutral: {
-    mouth: {
-      scale: { x: 1, y: 1, z: 1 },
-      position: { x: 0, y: -0.5, z: 2 },
-    },
-    eyes: {
-      scale: { x: 1, y: 1 },
-    },
-  },
-  happy: {
-    mouth: {
-      scale: { x: 1.2, y: 0.8, z: 1 },
-      position: { x: 0, y: -0.6, z: 2 },
-    },
-    eyes: {
-      scale: { x: 1, y: 0.8 },
-    },
-  },
-  speaking: {
-    mouth: {
-      scale: { x: 1, y: 1.2, z: 1 },
-      position: { x: 0, y: -0.5, z: 2 },
-    },
-    eyes: {
-      scale: { x: 1, y: 1 },
-    },
-  },
-};
-
-export function createAvatarHead(): THREE.Group {
-  const head = new THREE.Group();
-
-  // Create the main head sphere
-  const headGeometry = new THREE.SphereGeometry(2, 32, 32);
-  const headMaterial = new THREE.MeshPhongMaterial({
-    color: 0xf0d0c0,
-    specular: 0x111111,
-    shininess: 30,
-  });
-  const headMesh = new THREE.Mesh(headGeometry, headMaterial);
-  head.add(headMesh);
-
-  // Add eyes
-  const eyeGeometry = new THREE.SphereGeometry(0.3, 16, 16);
-  const eyeMaterial = new THREE.MeshPhongMaterial({
-    color: 0x444444,
-    specular: 0xffffff,
-    shininess: 100,
-  });
-
-  const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-  leftEye.position.set(-0.8, 0.2, 1.7);
-  head.add(leftEye);
-
-  const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-  rightEye.position.set(0.8, 0.2, 1.7);
-  head.add(rightEye);
-
-  // Add mouth
-  const mouthGeometry = new THREE.BoxGeometry(1.2, 0.2, 0.1);
-  const mouthMaterial = new THREE.MeshPhongMaterial({
-    color: 0x444444,
-  });
-  const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-  mouth.position.set(0, -0.5, 2);
-  head.add(mouth);
-
-  return head;
-}
-
-export function updateExpression(
-  head: THREE.Group,
-  expression: string,
-  intensity: number = 1
-): void {
-  const config = expressions[expression] || expressions.neutral;
-  const mouth = head.children.find(
-    (child) => child.geometry instanceof THREE.BoxGeometry
-  );
-
-  if (mouth) {
-    // Apply mouth transformations
-    const mouthScale = config.mouth.scale;
-    mouth.scale.set(
-      1 + (mouthScale.x - 1) * intensity,
-      1 + (mouthScale.y - 1) * intensity,
-      1
-    );
+  constructor() {
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     
-    // Apply mouth position
-    mouth.position.set(
-      config.mouth.position.x,
-      config.mouth.position.y,
-      config.mouth.position.z
-    );
+    // Create head
+    const headGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffd700 });
+    this.head = new THREE.Mesh(headGeometry, headMaterial);
+
+    // Create mouth
+    const mouthGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.1);
+    const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+    this.mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+    this.mouth.position.set(0, -0.3, 0.9);
+    
+    this.head.add(this.mouth);
+    this.scene.add(this.head);
+
+    // Add lighting
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 1, 2);
+    this.scene.add(light);
+
+    this.camera.position.z = 5;
   }
 
-  // Find and update eyes
-  const eyes = head.children.filter(
-    (child) => child.geometry instanceof THREE.SphereGeometry && child !== head.children[0]
-  );
-
-  eyes.forEach((eye) => {
-    const eyeScale = config.eyes.scale;
-    eye.scale.set(
-      1 + (eyeScale.x - 1) * intensity,
-      1 + (eyeScale.y - 1) * intensity,
-      1
-    );
-  });
-}
-
-export function animateSpeaking(
-  head: THREE.Group,
-  isSpeaking: boolean,
-  time: number
-): void {
-  if (!isSpeaking) {
-    updateExpression(head, 'neutral');
-    return;
+  init(container: HTMLElement) {
+    this.container = container;
+    this.renderer.setSize(container.clientWidth, container.clientWidth);
+    container.appendChild(this.renderer.domElement);
+    this.animate();
   }
 
-  // Create a smooth oscillation for the mouth
-  const intensity = Math.sin(time * 0.015) * 0.5 + 0.5;
-  updateExpression(head, 'speaking', intensity);
-}
-
-// Helper function to add random subtle head movements
-export function addIdleAnimation(head: THREE.Group): void {
-  const originalRotation = head.rotation.clone();
-  const amplitude = 0.03;
-  const frequency = 0.001;
-
-  head.userData.idleAnimation = (time: number) => {
-    head.rotation.x = originalRotation.x + Math.sin(time * frequency) * amplitude;
-    head.rotation.y = originalRotation.y + Math.cos(time * frequency * 0.7) * amplitude;
+  animate = () => {
+    requestAnimationFrame(this.animate);
+    this.head.rotation.y += 0.01;
+    this.renderer.render(this.scene, this.camera);
   };
-}
 
-// Setup lighting for the avatar
-export function setupAvatarLighting(scene: THREE.Scene): void {
-  // Main directional light
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-  mainLight.position.set(0, 1, 2);
-  scene.add(mainLight);
+  speak() {
+    const duration = 300;
+    const startTime = Date.now();
+    
+    const animateMouth = () => {
+      const elapsed = Date.now() - startTime;
+      const t = elapsed / duration;
+      
+      if (t < 1) {
+        this.mouth.scale.y = 1 + Math.sin(t * Math.PI * 4) * 0.5;
+        requestAnimationFrame(animateMouth);
+      } else {
+        this.mouth.scale.y = 1;
+      }
+    };
 
-  // Fill light
-  const fillLight = new THREE.DirectionalLight(0x7ec1ff, 0.3);
-  fillLight.position.set(-2, 0, 1);
-  scene.add(fillLight);
+    animateMouth();
+  }
 
-  // Ambient light
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-  scene.add(ambientLight);
+  cleanup() {
+    if (this.container) {
+      this.container.removeChild(this.renderer.domElement);
+    }
+  }
 }
