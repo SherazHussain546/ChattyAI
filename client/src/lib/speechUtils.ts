@@ -4,44 +4,50 @@ export class SpeechHandler {
   private isListening: boolean = false;
 
   constructor() {
-    // Check for both standard and webkit prefixed
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (SpeechRecognitionAPI) {
-      this.recognition = new SpeechRecognitionAPI();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
+    // Check for browser support
+    if (typeof window !== 'undefined') {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        this.recognition = new SpeechRecognitionAPI();
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+      }
+      this.synthesis = window.speechSynthesis;
     }
-
-    this.synthesis = window.speechSynthesis;
   }
 
-  startListening(onResult: (text: string) => void): void {
+  startListening(onResult: (text: string) => void): boolean {
     if (!this.recognition) {
       console.error('Speech recognition not supported in this browser');
-      return;
+      return false;
     }
 
     if (this.isListening) {
-      return;
+      return true;
     }
 
-    this.recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      onResult(text);
-    };
-
-    this.recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      this.isListening = false;
-    };
-
     try {
+      this.recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        onResult(text);
+      };
+
+      this.recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        this.isListening = false;
+      };
+
+      this.recognition.onend = () => {
+        this.isListening = false;
+      };
+
       this.recognition.start();
       this.isListening = true;
+      return true;
     } catch (error) {
       console.error('Failed to start speech recognition:', error);
       this.isListening = false;
+      return false;
     }
   }
 
@@ -56,20 +62,33 @@ export class SpeechHandler {
     }
   }
 
-  speak(text: string): void {
+  speak(text: string): boolean {
     if (!this.synthesis) {
       console.error('Speech synthesis not supported in this browser');
-      return;
+      return false;
     }
 
     try {
+      // Cancel any ongoing speech
+      this.synthesis.cancel();
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1;
       utterance.pitch = 1;
       this.synthesis.speak(utterance);
+      return true;
     } catch (error) {
       console.error('Failed to synthesize speech:', error);
+      return false;
     }
+  }
+
+  isRecognitionSupported(): boolean {
+    return this.recognition !== null;
+  }
+
+  isSynthesisSupported(): boolean {
+    return typeof this.synthesis !== 'undefined';
   }
 }
 

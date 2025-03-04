@@ -1,16 +1,18 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { VoiceControls } from '@/components/VoiceControls';
 import { speechHandler } from '@/lib/speechUtils';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
+import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage, UserPreferences } from '@shared/schema';
 
 export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const { toast } = useToast();
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['/api/messages']
@@ -30,9 +32,21 @@ export default function Home() {
 
       if (preferences?.voiceEnabled) {
         setIsSpeaking(true);
-        speechHandler.speak(data.aiMessage.content);
-        setTimeout(() => setIsSpeaking(false), 3000); // Increased timeout for longer messages
+        if (!speechHandler.speak(data.aiMessage.content)) {
+          toast({
+            description: "Speech synthesis failed. Voice response disabled.",
+            variant: "destructive"
+          });
+        }
+        // Set a reasonable timeout for speaking to complete
+        setTimeout(() => setIsSpeaking(false), 3000);
       }
+    },
+    onError: () => {
+      toast({
+        description: "Failed to send message",
+        variant: "destructive"
+      });
     }
   });
 
@@ -50,26 +64,34 @@ export default function Home() {
     sendMessage.mutate(content);
   };
 
-  const toggleListening = () => {
+  const toggleListening = useCallback(() => {
     if (isListening) {
       speechHandler.stopListening();
       setIsListening(false);
     } else {
-      speechHandler.startListening((text) => {
+      const started = speechHandler.startListening((text) => {
         handleSendMessage(text);
         setIsListening(false);
       });
-      setIsListening(true);
-    }
-  };
 
-  const toggleVoice = () => {
+      if (!started) {
+        toast({
+          description: "Failed to start speech recognition",
+          variant: "destructive"
+        });
+      } else {
+        setIsListening(true);
+      }
+    }
+  }, [isListening]);
+
+  const toggleVoice = useCallback(() => {
     if (preferences) {
       updatePreferences.mutate({
         voiceEnabled: preferences.voiceEnabled ? 0 : 1
       });
     }
-  };
+  }, [preferences, updatePreferences]);
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
