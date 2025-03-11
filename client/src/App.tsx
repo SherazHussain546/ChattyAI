@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { IonApp, IonRouterOutlet, IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonFooter, IonInput, IonButton, IonList, IonItem, IonLabel, IonAvatar, IonIcon, setupIonicReact } from '@ionic/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { IonApp, IonRouterOutlet, IonPage, IonContent, IonHeader, IonToolbar, IonTitle, 
+  IonFooter, IonInput, IonButton, IonList, IonItem, IonLabel, IonAvatar, IonIcon, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Route } from 'react-router-dom';
 import { send } from 'ionicons/icons';
@@ -34,45 +35,54 @@ interface Message {
 }
 
 const ChatPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: 'Hello! How can I assist you today?',
+      isUser: false,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const contentRef = useRef<HTMLIonContentElement>(null);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollToBottom(300);
+    }
+  }, [messages]);
 
   const sendMessage = async () => {
-    if (!inputText.trim()) return;
-    
-    // Create a new user message
+    if (!inputText.trim() || isLoading) return;
+
+    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
       timestamp: new Date()
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
-    
+
     try {
-      // You would typically replace this with an actual API call
-      // to your backend that handles the AI response
-      const response = await new Promise<string>(resolve => {
-        setTimeout(() => {
-          resolve(`This is a response to: ${userMessage.text}`);
-        }, 1000);
-      });
-      
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        text: response,
+      // Here would be the API call to your backend
+      // For demo purposes, we'll simulate a response after 1 second
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: `This is a simulated response to "${inputText}"`,
         isUser: false,
         timestamp: new Date()
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
+
+      setMessages(prev => [...prev, botResponse]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      // Handle error appropriately
+      console.error('Error getting response:', error);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +101,7 @@ const ChatPage: React.FC = () => {
           <IonTitle>Chat Avatar</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent ref={contentRef}>
         <IonList>
           {messages.map((message) => (
             <IonItem key={message.id} className={message.isUser ? 'user-message' : 'ai-message'}>
