@@ -1,9 +1,11 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Allow usage in browser for development
+});
 
-// Helper type for chat messages
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -31,7 +33,7 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
   }
 }
 
-// Analyze sentiment for avatar expressions (not implemented in current version but prepared for future use)
+// Analyze sentiment for avatar expressions
 export async function analyzeSentiment(text: string): Promise<{
   mood: "happy" | "neutral" | "sad";
   intensity: number;
@@ -52,21 +54,18 @@ export async function analyzeSentiment(text: string): Promise<{
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content || '{"mood":"neutral","intensity":0.5}');
     return {
       mood: result.mood || "neutral",
-      intensity: Math.max(0, Math.min(1, result.intensity || 0.5))
+      intensity: result.intensity || 0.5
     };
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
-    return {
-      mood: "neutral",
-      intensity: 0.5
-    };
+    return { mood: "neutral", intensity: 0.5 };
   }
 }
 
-// Convert text to speech-optimized format (not implemented in current version but prepared for future use)
+// Convert text to speech-optimized format 
 export async function optimizeForSpeech(text: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
