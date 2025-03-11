@@ -8,9 +8,14 @@
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "ionic:build": "vite build",
+    "ionic:serve": "vite",
+    "ionic:cap:add": "cap add android && cap add ios",
+    "ionic:cap:sync": "cap sync"
   },
   "dependencies": {
+    "@capacitor/cli": "^7.0.1",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
