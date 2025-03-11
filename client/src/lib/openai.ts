@@ -3,7 +3,6 @@ import { OpenAI } from "openai";
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Allow usage in browser for development
 });
 
 interface ChatMessage {
@@ -54,11 +53,8 @@ export async function analyzeSentiment(text: string): Promise<{
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{"mood":"neutral","intensity":0.5}');
-    return {
-      mood: result.mood || "neutral",
-      intensity: result.intensity || 0.5
-    };
+    const content = response.choices[0].message.content || '{"mood":"neutral","intensity":0.5}';
+    return JSON.parse(content);
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
     return { mood: "neutral", intensity: 0.5 };
