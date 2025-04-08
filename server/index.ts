@@ -9,8 +9,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Increase JSON payload size limit to 50MB for screenshots
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
 // Logging middleware
