@@ -3,7 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { pool } from "./db";
+import { isFirebaseConfigured } from "./firebase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,14 +44,19 @@ app.use((req, res, next) => {
   next();
 });
 
-process.on('SIGTERM', async () => {
+// Handle shutdown gracefully
+process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
-  await pool.end();
   process.exit(0);
 });
 
 (async () => {
   try {
+    // Verify Firebase is properly configured
+    if (!isFirebaseConfigured()) {
+      console.error("Firebase is not properly configured. Please check your environment variables.");
+    }
+    
     const server = await registerRoutes(app);
 
     // Global error handler
@@ -78,7 +83,6 @@ process.on('SIGTERM', async () => {
     });
   } catch (error) {
     console.error('Failed to start server:', error);
-    await pool.end();
     process.exit(1);
   }
 })();

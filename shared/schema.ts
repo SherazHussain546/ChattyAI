@@ -1,70 +1,49 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+// Schemas
+export const userSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  password: z.string(),
+  createdAt: z.date(),
 });
 
-export const chatMessages = pgTable("chat_messages", {
-  id: serial("id").primaryKey(),
-  content: text("content").notNull(),
-  role: text("role", { enum: ["user", "assistant"] }).notNull(),
-  userId: integer("user_id").references(() => users.id),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  role: z.enum(["user", "assistant"]),
+  userId: z.string(),
+  timestamp: z.date(),
 });
 
-export const userPreferences = pgTable("user_preferences", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull().unique(),
-  voiceEnabled: integer("voice_enabled").notNull().default(1),
-  avatarEnabled: integer("avatar_enabled").notNull().default(1),
+export const userPreferencesSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  voiceEnabled: z.number().default(1),
+  avatarEnabled: z.number().default(1),
 });
-
-// Relations
-export const usersRelations = relations(users, ({ many, one }) => ({
-  messages: many(chatMessages),
-  preferences: one(userPreferences),
-}));
-
-export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-  user: one(users, {
-    fields: [chatMessages.userId],
-    references: [users.id],
-  }),
-}));
-
-export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
-  user: one(users, {
-    fields: [userPreferences.userId],
-    references: [users.id],
-  }),
-}));
 
 // Insert Schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = userSchema.omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertMessageSchema = createInsertSchema(chatMessages).pick({
-  content: true,
-  role: true,
+export const insertMessageSchema = chatMessageSchema.omit({
+  id: true,
+  userId: true,
+  timestamp: true,
 });
 
-export const insertPreferencesSchema = createInsertSchema(userPreferences).pick({
-  voiceEnabled: true,
-  avatarEnabled: true,
+export const insertPreferencesSchema = userPreferencesSchema.omit({
+  id: true,
+  userId: true,
 });
 
 // Types
-export type User = typeof users.$inferSelect;
+export type User = z.infer<typeof userSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
+export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type InsertChatMessage = z.infer<typeof insertMessageSchema>;
-export type UserPreferences = typeof userPreferences.$inferSelect;
+export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 export type InsertUserPreferences = z.infer<typeof insertPreferencesSchema>;
