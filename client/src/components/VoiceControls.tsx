@@ -1,51 +1,66 @@
-import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
-import { useEffect } from 'react';
-import { speechHandler } from '@/lib/speechUtils';
+import { Button } from "@/components/ui/button";
+import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VoiceControlsProps {
   isListening: boolean;
   voiceEnabled: boolean;
   onToggleListening: () => void;
   onToggleVoice: () => void;
+  isSpeechSupported: boolean;
+  disabled?: boolean;
 }
 
 export function VoiceControls({
   isListening,
   voiceEnabled,
   onToggleListening,
-  onToggleVoice
+  onToggleVoice,
+  isSpeechSupported,
+  disabled = false,
 }: VoiceControlsProps) {
-  // Check browser support on mount
-  useEffect(() => {
-    if (!speechHandler.isRecognitionSupported()) {
-      console.warn('Speech recognition is not supported in this browser');
-    }
-    if (!speechHandler.isSynthesisSupported()) {
-      console.warn('Speech synthesis is not supported in this browser');
-    }
-  }, []);
-
   return (
-    <div className="flex gap-2 justify-center my-4">
-      <Button
-        variant={isListening ? "destructive" : "secondary"}
-        size="icon"
-        onClick={onToggleListening}
-        disabled={!speechHandler.isRecognitionSupported()}
-        title={!speechHandler.isRecognitionSupported() ? "Speech recognition not supported in this browser" : ""}
-      >
-        {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-      </Button>
-      <Button
-        variant={voiceEnabled ? "default" : "secondary"}
-        size="icon"
-        onClick={onToggleVoice}
-        disabled={!speechHandler.isSynthesisSupported()}
-        title={!speechHandler.isSynthesisSupported() ? "Speech synthesis not supported in this browser" : ""}
-      >
-        {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-      </Button>
+    <div className="flex items-center gap-2">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onToggleListening}
+              className={isListening ? "bg-red-100 dark:bg-red-900" : ""}
+              disabled={!isSpeechSupported || disabled}
+            >
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isListening ? "Stop listening" : "Start voice input"}</p>
+            {!isSpeechSupported && <p className="text-xs text-red-500">Speech recognition not supported in this browser</p>}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={onToggleVoice}
+              disabled={disabled}
+            >
+              {voiceEnabled ? 
+                <Volume2 className="h-4 w-4" /> : 
+                <VolumeX className="h-4 w-4" />
+              }
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{voiceEnabled ? "Disable voice responses" : "Enable voice responses"}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

@@ -9,7 +9,7 @@ export function ProtectedRoute({
   component: () => JSX.Element;
   path: string;
 }) {
-  const { user, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,7 +21,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />

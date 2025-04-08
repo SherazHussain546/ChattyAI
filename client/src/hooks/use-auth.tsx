@@ -1,110 +1,166 @@
-import { createContext, ReactNode, useContext } from "react";
-import {
-  useQuery,
-  useMutation,
-} from "@tanstack/react-query";
-import { insertUserSchema, type User } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously, 
+  signOut, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  Auth,
+  User as FirebaseUser 
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Type guard to check if auth is initialized
+function isAuthInitialized(auth: Auth | undefined): auth is Auth {
+  return !!auth;
+}
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+
 type AuthContextType = {
-  user: User | null;
+  currentUser: FirebaseUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: ReturnType<typeof useLoginMutation>;
-  logoutMutation: ReturnType<typeof useLogoutMutation>;
-  registerMutation: ReturnType<typeof useRegisterMutation>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInAsGuest: () => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function useLoginMutation() {
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: async (credentials: { username: string; password: string }) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return res.json();
-    },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        description: "Successfully logged in",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-function useRegisterMutation() {
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
-      const validated = insertUserSchema.parse(data);
-      const res = await apiRequest("POST", "/api/register", validated);
-      return res.json();
-    },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        description: "Successfully registered",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-function useLogoutMutation() {
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-      toast({
-        description: "Successfully logged out",
-      });
-    },
-  });
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<User | null>({
-    queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
 
-  const loginMutation = useLoginMutation();
-  const registerMutation = useRegisterMutation();
-  const logoutMutation = useLogoutMutation();
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, []);
+
+  // Sign in with email and password
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setError(null);
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        description: "Successfully signed in",
+      });
+    } catch (err) {
+      setError(err as Error);
+      toast({
+        title: "Sign in failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  // Sign up with email and password
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      setError(null);
+      await createUserWithEmailAndPassword(auth, email, password);
+      toast({
+        description: "Account created successfully",
+      });
+    } catch (err) {
+      setError(err as Error);
+      toast({
+        title: "Sign up failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    try {
+      setError(null);
+      await signInWithPopup(auth, googleProvider);
+      toast({
+        description: "Signed in with Google",
+      });
+    } catch (err) {
+      setError(err as Error);
+      toast({
+        title: "Google sign in failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  // Sign in as guest (anonymously)
+  const signInAsGuest = async () => {
+    try {
+      setError(null);
+      await signInAnonymously(auth);
+      toast({
+        description: "Signed in as guest",
+      });
+    } catch (err) {
+      setError(err as Error);
+      toast({
+        title: "Guest sign in failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  // Sign out
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      // Clear any user-related data from cache
+      queryClient.clear();
+      toast({
+        description: "Successfully signed out",
+      });
+    } catch (err) {
+      setError(err as Error);
+      toast({
+        title: "Sign out failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  const value = {
+    currentUser,
+    isLoading,
+    error,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithGoogle,
+    signInAsGuest,
+    logout
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user: user ?? null,
-        isLoading,
-        error,
-        loginMutation,
-        logoutMutation,
-        registerMutation,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
