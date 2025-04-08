@@ -27,12 +27,12 @@ const authFormSchema = z.object({
 export default function AuthPage() {
   const [_, navigate] = useLocation();
   const [isMatch] = useRoute('/auth');
-  const { currentUser, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('login');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Redirect if already logged in
-  if (currentUser && !isLoading && isMatch) {
+  if (user && !loading && isMatch) {
     return <Redirect to="/" />;
   }
 
@@ -158,7 +158,9 @@ function AuthForm({
   authError: string | null;
   setAuthError: (error: string | null) => void;
 }) {
-  const { signInWithEmail, signUpWithEmail } = useAuth();
+  // We don't have email/password auth in our current implementation,
+  // but we're keeping the form structure for when it's added
+  const { signInWithGoogle } = useAuth();
   const [_, navigate] = useLocation();
 
   const form = useForm<AuthFormData>({
@@ -173,11 +175,8 @@ function AuthForm({
     try {
       setAuthError(null);
       
-      if (mode === 'login') {
-        await signInWithEmail(data.email, data.password);
-      } else {
-        await signUpWithEmail(data.email, data.password);
-      }
+      // Temporarily using Google auth instead of email/password
+      await signInWithGoogle();
       
       onSubmit(data);
       navigate('/');

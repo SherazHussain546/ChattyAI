@@ -1,49 +1,39 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { ChatMessage } from '@/lib/types';
+import { ChatMessage } from '@shared/schema';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 
-export function ChatInterface() {
-  const { user, chatHistory } = useAuth();
+interface ChatInterfaceProps {
+  messages: ChatMessage[];
+  onSendMessage: (content: string, withScreenshot?: boolean) => void;
+  isCapturingScreen?: boolean;
+  isSendingMessage?: boolean;
+}
+
+export function ChatInterface({
+  messages,
+  onSendMessage,
+  isCapturingScreen = false,
+  isSendingMessage = false
+}: ChatInterfaceProps) {
+  const { user } = useAuth();
   const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!message.trim() || !user) return;
-
-    setSending(true);
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: message,
-          role: 'user',
-          userId: user.uid
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send message');
-
-      setMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setSending(false);
-    }
+    onSendMessage(message);
+    setMessage('');
   };
 
   return (
     <Card className="flex flex-col h-[80vh] p-4">
       <ScrollArea className="flex-1 mb-4">
-        {chatHistory.map((msg: ChatMessage) => (
+        {messages.map((msg: ChatMessage, idx) => (
           <div
-            key={msg.id}
+            key={msg.id || idx}
             className={`mb-4 p-3 rounded-lg ${
               msg.role === 'user' ? 'bg-primary/10 ml-auto' : 'bg-muted'
             } max-w-[80%]`}
@@ -59,11 +49,11 @@ export function ChatInterface() {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={!user || sending}
+          disabled={!user || isSendingMessage || isCapturingScreen}
         />
         <Button 
           onClick={handleSend}
-          disabled={!user || !message.trim() || sending}
+          disabled={!user || !message.trim() || isSendingMessage || isCapturingScreen}
         >
           Send
         </Button>

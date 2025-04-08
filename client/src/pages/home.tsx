@@ -24,7 +24,7 @@ export default function Home() {
   const [isCapturingScreen, setIsCapturingScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const { toast } = useToast();
-  const { currentUser, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [_, navigate] = useLocation();
 
   // Fetch messages
@@ -156,7 +156,7 @@ export default function Home() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       navigate('/auth');
     } catch (error) {
       toast({
@@ -201,7 +201,7 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User className="h-4 w-4" />
                   <span className="hidden md:inline-block">
-                    {currentUser?.email || currentUser?.displayName || (currentUser?.isAnonymous ? "Guest User" : "User")}
+                    {user?.email || user?.displayName || (user?.isAnonymous ? "Guest User" : "User")}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
@@ -325,14 +325,14 @@ export default function Home() {
                   <div className="space-y-1">
                     <h3 className="font-medium">Email</h3>
                     <p className="text-muted-foreground">
-                      {currentUser?.email || 'No email available'}
+                      {user?.email || 'No email available'}
                     </p>
                   </div>
                   
                   <div className="space-y-1">
                     <h3 className="font-medium">User Type</h3>
                     <p className="text-muted-foreground">
-                      {currentUser?.isAnonymous ? 'Guest User' : 'Registered User'}
+                      {user?.isAnonymous ? 'Guest User' : 'Registered User'}
                     </p>
                   </div>
                   
