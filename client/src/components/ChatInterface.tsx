@@ -4,24 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Camera, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { type ChatMessage } from '@/lib/apiClient';
-import { Tooltip } from '@/components/ui/tooltip';
-import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { type ChatMessage } from '@shared/schema';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { FormattedDate } from '@/components/FormattedDate';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   onSendMessage: (message: string, withScreenshot?: boolean) => void;
-  isCapturingScreen: boolean;
-  isSendingMessage: boolean;
+  isCapturingScreen?: boolean;
+  isSendingMessage?: boolean;
 }
 
 export function ChatInterface({ 
   messages, 
   onSendMessage, 
-  isCapturingScreen,
-  isSendingMessage
+  isCapturingScreen = false,
+  isSendingMessage = false
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,6 +46,13 @@ export function ChatInterface({
     } else {
       onSendMessage('Analyze this screenshot', true);
     }
+  };
+
+  // Format date for message timestamp
+  const formatDate = (date: string | Date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -89,7 +94,7 @@ export function ChatInterface({
                   )}
                 </Card>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {message.timestamp && <FormattedDate date={message.timestamp} />}
+                  {message.timestamp && formatDate(message.timestamp)}
                 </div>
               </div>
             ))

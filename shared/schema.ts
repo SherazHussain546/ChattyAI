@@ -13,7 +13,8 @@ export const chatMessageSchema = z.object({
   content: z.string(),
   role: z.enum(["user", "assistant"]),
   userId: z.string(),
-  timestamp: z.date(),
+  timestamp: z.string().or(z.date()),
+  has_image: z.boolean().optional(),
 });
 
 export const userPreferencesSchema = z.object({
