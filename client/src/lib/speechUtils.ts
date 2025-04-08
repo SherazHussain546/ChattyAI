@@ -1,5 +1,6 @@
 export class SpeechHandler {
-  private recognition: SpeechRecognition | null = null;
+  // @ts-ignore - Using any for cross-browser support
+  private recognition: any = null;
   private synthesis: SpeechSynthesis;
   private isListening: boolean = false;
   private voices: SpeechSynthesisVoice[] = [];
@@ -9,7 +10,9 @@ export class SpeechHandler {
     this.synthesis = window.speechSynthesis;
     
     // Initialize speech recognition if available
+    // @ts-ignore - Using window properties that TypeScript doesn't recognize
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      // @ts-ignore - Cross-browser SpeechRecognition
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       this.recognition = new SpeechRecognitionAPI();
       this.recognition.continuous = true;
@@ -30,12 +33,14 @@ export class SpeechHandler {
   startListening(onResult: (text: string) => void): boolean {
     if (!this.recognition || this.isListening) return false;
 
-    this.recognition.onresult = (event) => {
+    // @ts-ignore - Event typing issues
+    this.recognition.onresult = (event: any) => {
       const result = event.results[event.results.length - 1][0].transcript;
       onResult(result);
     };
     
-    this.recognition.onerror = (event) => {
+    // @ts-ignore - Event typing issues
+    this.recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       this.isListening = false;
     };

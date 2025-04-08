@@ -1,6 +1,16 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
+// Define model names - these might need updating as the API evolves
+const MODELS = {
+  text: "gemini-1.5-pro",      // The most advanced text model
+  vision: "gemini-1.5-pro-vision", // For image analysis
+  // Fallbacks to older versions if needed
+  textFallback: "gemini-pro",  
+  visionFallback: "gemini-pro-vision"
+};
+
 // Initialize the Gemini API
+// Note: Make sure GEMINI_API_KEY is properly set
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // Define interface for chat messages
@@ -19,49 +29,42 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
       return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
     }
 
-    // For Gemini, we need to convert the chat history to their format
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    console.log("Using Gemini API with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
     
-    const generationConfig = {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 1024,
-    };
+    // Try both current and fallback models
+    let model;
+    try {
+      // First try the latest model
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+      console.log("Using latest Gemini model:", MODELS.text);
+    } catch (e) {
+      // Fall back to standard model if latest isn't available
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+      console.log("Falling back to standard Gemini model:", MODELS.textFallback);
+    }
     
-    const safetySettings = [
-      {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-    ];
-
-    // Create a chat session
-    const chat = model.startChat({
-      generationConfig,
-      safetySettings,
-      history: history.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      })),
-    });
-
-    // Send the message and get a response
-    const result = await chat.sendMessage(message);
+    // Convert history and new message into a prompt
+    let prompt = "";
+    
+    // If there's history, format it as a conversation
+    if (history.length > 0) {
+      for (const msg of history) {
+        const role = msg.role === "user" ? "User" : "Assistant";
+        prompt += `${role}: ${msg.content}\n\n`;
+      }
+    }
+    
+    // Add the new message
+    prompt += `User: ${message}\n\nAssistant:`;
+    
+    // Generate content
+    const result = await model.generateContent(prompt);
     const response = result.response;
-    return response.text();
+    const text = response.text();
+    
+    console.log("Gemini response:", text.substring(0, 100) + "...");
+    
+    return text;
   } catch (error) {
     console.error("Error getting chat response from Gemini:", error);
     throw new Error("Failed to get response from AI");
@@ -78,8 +81,17 @@ export async function getImageChatResponse(message: string, imageBase64: string)
       return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
     }
 
-    // Initialize the Gemini Vision model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    // Try both current and fallback models for vision
+    let model;
+    try {
+      // First try the latest vision model
+      model = genAI.getGenerativeModel({ model: MODELS.vision });
+      console.log("Using latest Gemini vision model:", MODELS.vision);
+    } catch (e) {
+      // Fall back to standard vision model if latest isn't available
+      model = genAI.getGenerativeModel({ model: MODELS.visionFallback });
+      console.log("Falling back to standard Gemini vision model:", MODELS.visionFallback);
+    }
     
     // Create image parts from the base64 image
     const imageParts = [{
@@ -115,7 +127,13 @@ export async function analyzeSentiment(text: string): Promise<{
       return { mood: "neutral", intensity: 0.5 };
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try appropriate model for sentiment analysis
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+    } catch (e) {
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+    }
     
     // Prompt for sentiment analysis in JSON format
     const prompt = `
@@ -154,7 +172,13 @@ export async function optimizeForSpeech(text: string): Promise<string> {
       return text;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try appropriate model for speech optimization
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+    } catch (e) {
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+    }
     
     const prompt = `
       Convert the following text into a more natural, speech-friendly format.

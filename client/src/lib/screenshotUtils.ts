@@ -6,6 +6,7 @@
 export async function captureScreenshot(): Promise<string | null> {
   try {
     // Ask for permission and access to the screen
+    // @ts-ignore - TypeScript doesn't recognize cursor and displaySurface properties
     const mediaStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         // Setting reasonable constraints for a screenshot

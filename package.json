@@ -15,6 +15,7 @@
     "ionic:cap:sync": "cap sync"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
     "@capacitor/cli": "^7.0.1",
     "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^3.9.1",
