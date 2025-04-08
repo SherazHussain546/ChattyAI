@@ -14,6 +14,15 @@ import { auth } from "@/lib/firebase";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Type definition for Firebase User if not imported correctly
+interface FirebaseUserType {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  isAnonymous: boolean;
+}
+
 // Type guard to check if auth is initialized
 function isAuthInitialized(auth: Auth | undefined): auth is Auth {
   return !!auth;

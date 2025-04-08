@@ -2,40 +2,19 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Check if Firebase environment variables are set
-export function isFirebaseConfigured(): boolean {
-  return (
-    !!import.meta.env.VITE_FIREBASE_API_KEY &&
-    !!import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
-    !!import.meta.env.VITE_FIREBASE_PROJECT_ID
-  );
-}
-
-// Firebase configuration
+// Simple Firebase configuration with direct values
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 
-    `${import.meta.env.VITE_FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 
-    `${import.meta.env.VITE_FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 
-    import.meta.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || import.meta.env.FIREBASE_APP_ID,
+  apiKey: "AIzaSyDc3opydQnG6nDYHA00GiVAq79lXse3oSc",
+  authDomain: "chattyai-e8364.firebaseapp.com",
+  projectId: "chattyai-e8364",
+  storageBucket: "chattyai-e8364.appspot.com",
+  messagingSenderId: "760093164825",
+  appId: "1:760093164825:web:a04f62679a384277f0f188"
 };
 
-// Initialize Firebase conditionally if properly configured
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Check if configuration is valid after initialization
-if (isFirebaseConfigured()) {
-  console.log("Firebase initialized successfully");
-} else {
-  console.warn(
-    "Firebase configuration is incomplete. Please check your environment variables."
-  );
-}
 
 export { app, auth, db };
