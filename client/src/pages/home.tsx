@@ -65,26 +65,42 @@ export default function Home() {
         image_data: imageBase64
       };
       
+      console.log("Sending message:", payload);
       const res = await apiRequest('POST', '/api/messages', payload);
-      return res.json();
+      const data = await res.json();
+      console.log("Received response:", data);
+      return data;
     },
     onSuccess: async (data) => {
+      console.log("Message sent successfully, invalidating queries");
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
 
-      if (preferences?.voiceEnabled) {
-        setIsSpeaking(true);
-        const success = await speechHandler.speak(data.aiMessage.content);
-        if (!success) {
-          toast({
-            description: "Speech synthesis failed. Voice response disabled.",
-            variant: "destructive"
-          });
+      // Check if AI response exists
+      if (data && data.aiMessage && data.aiMessage.content) {
+        if (preferences?.voiceEnabled) {
+          setIsSpeaking(true);
+          const success = await speechHandler.speak(data.aiMessage.content);
+          if (!success) {
+            toast({
+              description: "Speech synthesis failed. Voice response disabled.",
+              variant: "destructive"
+            });
+          }
+          setIsSpeaking(false);
         }
-        setIsSpeaking(false);
+      } else {
+        console.error("Invalid AI response received:", data);
+        toast({
+          title: "Error",
+          description: "Received invalid response from the server",
+          variant: "destructive"
+        });
       }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to send message:", error);
       toast({
+        title: "Error",
         description: "Failed to send message",
         variant: "destructive"
       });

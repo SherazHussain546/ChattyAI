@@ -157,6 +157,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         has_image: false
       });
 
+      console.log("Messages in storage for user:", messageStore[userId].length);
+      console.log("Returning messages to client:", { 
+        userMessageId: userMessage.id,
+        aiMessageId: aiMessage.id 
+      });
+
       res.json({ userMessage, aiMessage });
     } catch (error) {
       console.error('Error processing message:', error);
