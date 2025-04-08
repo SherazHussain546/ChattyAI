@@ -5,23 +5,34 @@
 // Capture a screenshot of the current screen using getDisplayMedia
 export async function captureScreenshot(): Promise<string | null> {
   try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      throw new Error('Screen capture not supported in this browser');
+    }
+
     // Ask for permission and access to the screen
-    // @ts-ignore - TypeScript doesn't recognize cursor and displaySurface properties
+    // TypeScript doesn't fully support all getDisplayMedia options,
+    // but they're part of the standard
+    // @ts-ignore - TypeScript doesn't fully recognize getDisplayMedia options
     const mediaStream = await navigator.mediaDevices.getDisplayMedia({
-      video: {
-        // Setting reasonable constraints for a screenshot
-        cursor: "always",
-        displaySurface: "monitor",
-      },
+      video: true
     });
+
+    if (!mediaStream) {
+      throw new Error('No media stream available');
+    }
 
     // Create a video element to capture a frame
     const video = document.createElement('video');
     video.srcObject = mediaStream;
     
-    // Wait for the video to load
-    await new Promise<void>((resolve) => {
+    // Wait for the video to load with a timeout
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Video loading timed out'));
+      }, 10000); // 10 second timeout
+      
       video.onloadedmetadata = () => {
+        clearTimeout(timeout);
         video.play();
         resolve();
       };
@@ -29,6 +40,12 @@ export async function captureScreenshot(): Promise<string | null> {
 
     // Create a canvas to draw the captured frame
     const canvas = document.createElement('canvas');
+    
+    // Check if video has valid dimensions
+    if (video.videoWidth <= 0 || video.videoHeight <= 0) {
+      throw new Error('Invalid video dimensions');
+    }
+    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -37,6 +54,7 @@ export async function captureScreenshot(): Promise<string | null> {
     if (!ctx) {
       throw new Error('Failed to get canvas context');
     }
+    
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Stop all tracks to release the camera
@@ -45,10 +63,15 @@ export async function captureScreenshot(): Promise<string | null> {
     // Convert canvas to base64 image data
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
+    if (!imageData || imageData === 'data:,') {
+      throw new Error('Failed to capture image data');
+    }
+    
     // Resize image if it's too large
     return await resizeBase64Image(imageData);
   } catch (error) {
     console.error('Error capturing screenshot:', error);
+    alert('Failed to capture screenshot: ' + (error instanceof Error ? error.message : 'Unknown error'));
     return null;
   }
 }

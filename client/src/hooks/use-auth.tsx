@@ -45,7 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return result.user;
     } catch (error) {
       console.error("Error signing in with Google:", error);
-      throw error;
+      
+      // Check if it's an unauthorized domain error
+      // @ts-ignore - Firebase error type with code property
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/unauthorized-domain') {
+        // Fallback to guest login when domain is not authorized
+        console.warn("Firebase domain not authorized. Falling back to guest login.");
+        await signInAsGuest();
+        return user;
+      } else {
+        throw error;
+      }
     }
   };
 

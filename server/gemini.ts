@@ -2,9 +2,10 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 
 // Define model names - these might need updating as the API evolves
 const MODELS = {
-  text: "gemini-1.5-pro",      // The most advanced text model
-  vision: "gemini-1.5-pro-vision", // For image analysis
-  // Fallbacks to older versions if needed
+  // Start with safer, known-to-exist models
+  text: "gemini-pro",
+  vision: "gemini-pro-vision",
+  // Fallbacks if the primary models don't work
   textFallback: "gemini-pro",  
   visionFallback: "gemini-pro-vision"
 };
