@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { ChatMessage } from '@shared/schema';
+import { ChatMessage } from '@/lib/types';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem,
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, History, Settings, Moon, Sun } from 'lucide-react';
-import type { ChatMessage, UserPreferences } from '@shared/schema';
+import type { ChatMessage, UserPreferences } from '@/lib/types';
 
 export default function Home() {
   const [isListening, setIsListening] = useState(false);

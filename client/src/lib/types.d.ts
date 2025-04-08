@@ -57,7 +57,8 @@ export interface ChatMessage {
   id?: string;
   content: string;
   role: 'user' | 'assistant';
-  timestamp?: string;
+  timestamp?: string | Date;
+  userId?: string;
   has_image?: boolean;
 }
 
@@ -72,10 +73,10 @@ export interface UserPreferences {
   id: string;
   userId: string;
   theme: 'light' | 'dark' | 'system';
-  voice_enabled: boolean;
-  notification_enabled: boolean;
-  created_at?: string;
-  updated_at?: string;
+  voiceEnabled: number; // This is a number (0 or 1) in the database schema
+  avatarEnabled: number; // This is a number (0 or 1) in the database schema
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Firebase User type
