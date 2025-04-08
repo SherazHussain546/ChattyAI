@@ -1,5 +1,14 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
+// Define model names - these might need updating as the API evolves
+const MODELS = {
+  text: "gemini-1.5-pro",       // The most advanced text model
+  vision: "gemini-1.5-pro-vision", // For image analysis
+  // Fallbacks to older versions if needed
+  textFallback: "gemini-pro",  
+  visionFallback: "gemini-pro-vision"
+};
+
 // Initialize Gemini client
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
@@ -12,8 +21,17 @@ interface ChatMessage {
 // Process text chat messages and get AI response
 export async function getChatResponse(message: string, history: ChatMessage[] = []): Promise<string> {
   try {
-    // For text-only requests, use Gemini-Pro
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try both current and fallback models
+    let model;
+    try {
+      // First try the latest model
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+      console.log("Using latest Gemini model:", MODELS.text);
+    } catch (e) {
+      // Fall back to standard model if latest isn't available
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+      console.log("Falling back to standard Gemini model:", MODELS.textFallback);
+    }
     
     // Set safety settings
     const safetySettings = [
@@ -65,8 +83,17 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
 // Process image-based messages and get AI response
 export async function getImageChatResponse(message: string, imageBase64: string): Promise<string> {
   try {
-    // For requests with images, use Gemini-Pro-Vision
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    // Try both current and fallback models for vision
+    let model;
+    try {
+      // First try the latest vision model
+      model = genAI.getGenerativeModel({ model: MODELS.vision });
+      console.log("Using latest Gemini vision model:", MODELS.vision);
+    } catch (e) {
+      // Fall back to standard vision model if latest isn't available
+      model = genAI.getGenerativeModel({ model: MODELS.visionFallback });
+      console.log("Falling back to standard Gemini vision model:", MODELS.visionFallback);
+    }
     
     // Prepare content parts with both text and image
     const imagePart = {
@@ -123,7 +150,13 @@ export async function analyzeSentiment(text: string): Promise<{
   intensity: number;
 }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try appropriate model for sentiment analysis
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+    } catch (e) {
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+    }
     
     const promptText = `
     Analyze the emotional tone of this text and respond with a JSON object only.
@@ -159,7 +192,13 @@ export async function analyzeSentiment(text: string): Promise<{
 // Convert text to speech-optimized format 
 export async function optimizeForSpeech(text: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try appropriate model for speech optimization
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: MODELS.text });
+    } catch (e) {
+      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+    }
     
     const promptText = `
     Convert the following text into a more natural, speech-friendly format.

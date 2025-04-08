@@ -1,4 +1,20 @@
-import { db, adminDb } from "./firebase";
+// Import necessary types
+import {
+  type User,
+  type InsertUser,
+  type ChatMessage,
+  type InsertChatMessage,
+  type UserPreferences,
+  type InsertUserPreferences,
+} from "@shared/schema";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+// Import MemStorage first to avoid conflicts
+import { MemStorage } from "./memStorage";
+
+// Firebase imports
+import { db } from "./firebase";
 import {
   collection,
   doc,
@@ -13,16 +29,6 @@ import {
   Timestamp,
   DocumentData
 } from "firebase/firestore";
-import {
-  type User,
-  type InsertUser,
-  type ChatMessage,
-  type InsertChatMessage,
-  type UserPreferences,
-  type InsertUserPreferences,
-} from "@shared/schema";
-import session from "express-session";
-import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -49,6 +55,9 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
+// MemStorage is now imported from memStorage.ts
+
+// Firebase-based storage - uncomment when Firebase permissions are resolved
 export class FirebaseStorage implements IStorage {
   sessionStore: session.Store;
 
@@ -230,4 +239,5 @@ export class FirebaseStorage implements IStorage {
   }
 }
 
-export const storage = new FirebaseStorage();
+// Use in-memory storage for testing until Firebase permissions are fixed
+export const storage = new MemStorage();

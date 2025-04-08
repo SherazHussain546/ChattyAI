@@ -149,10 +149,17 @@ export async function analyzeSentiment(text: string): Promise<{
     const result = await model.generateContent(prompt);
     const response = result.response.text().trim();
     
-    // Extract the JSON object from the response
-    const jsonMatch = response.match(/\{.*\}/s);
+    // Extract the JSON object from the response - use a greedy approach to handle newlines
+    const jsonMatch = response.includes('{') && response.includes('}') 
+      ? response.substring(response.indexOf('{'), response.lastIndexOf('}')+1)
+      : null;
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      try {
+        return JSON.parse(jsonMatch);
+      } catch (e) {
+        console.error("Failed to parse JSON from Gemini response:", e);
+        return { mood: "neutral", intensity: 0.5 };
+      }
     } else {
       return { mood: "neutral", intensity: 0.5 };
     }
