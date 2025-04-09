@@ -48,6 +48,11 @@ export function ChatInterface({
     if (messages.length > 0) {
       console.log("First message:", messages[0]?.content?.substring(0, 30) + "...");
       console.log("Last message:", messages[messages.length - 1]?.content?.substring(0, 30) + "...");
+      
+      // Log all messages for debugging
+      messages.forEach((msg, idx) => {
+        console.log(`Message ${idx + 1}/${messages.length} (${msg.role}): ${msg.content.substring(0, 30)}...`);
+      });
     }
   }, [messages, isSendingMessage, isStreaming, streamingContent]);
 

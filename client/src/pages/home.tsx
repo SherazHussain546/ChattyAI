@@ -36,8 +36,10 @@ export default function Home() {
   // Fetch messages
   const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ['/api/messages'],
-    refetchInterval: 0, // Don't auto-refetch
-    staleTime: 0 // Always consider messages potentially stale
+    refetchInterval: 3000, // Refetch every 3 seconds to catch any missed messages
+    staleTime: 1000, // Consider messages stale after 1 second
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true // Refetch when window gets focus
   });
 
   // Fetch user preferences
@@ -82,10 +84,25 @@ export default function Home() {
     onSuccess: async (data) => {
       console.log("Message sent successfully, refreshing messages");
       
-      // Immediately refetch messages to show the updated conversation
+      // Immediately update the QueryClient cache with the new messages
+      // This ensures the UI will show the messages right away
+      if (data && data.userMessage && data.aiMessage) {
+        const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/messages']) || [];
+        
+        // Add both messages to the cache directly
+        queryClient.setQueryData<ChatMessage[]>(['/api/messages'], [
+          ...currentMessages,
+          data.userMessage,
+          data.aiMessage
+        ]);
+        
+        console.log("Updated message cache with new messages:", data.userMessage.id, data.aiMessage.id);
+      }
+      
+      // Also refetch to ensure we get the latest from the server
       await refetchMessages();
       
-      // Also invalidate the query cache to ensure it stays updated
+      // Invalidate the query cache to ensure it stays updated long-term
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
 
       // Check if AI response exists
@@ -102,9 +119,6 @@ export default function Home() {
           }
           setIsSpeaking(false);
         }
-        
-        // Ensure messages are up to date after speech processing
-        refetchMessages();
       } else {
         console.error("Invalid AI response received:", data);
         toast({
