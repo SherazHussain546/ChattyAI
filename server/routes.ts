@@ -8,24 +8,142 @@ import { setupAuth } from "./auth";
 // Local in-memory storage for messages and preferences until Firebase permissions are fixed
 import { UserPreferences, InsertUserPreferences } from "@shared/schema";
 
-// Messages storage
-const messageStore: Record<string, ChatMessage[]> = {};
-const getLocalMessages = (userId: string): ChatMessage[] => messageStore[userId] || [];
+// Chat storage - enhanced to track chat threads/sessions
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+// User chat sessions
+const chatSessionStore: Record<string, ChatSession[]> = {};
+// Current active session ID for each user
+const activeSessionStore: Record<string, string> = {};
+
+// Get all messages for current active chat
+const getLocalMessages = (userId: string): ChatMessage[] => {
+  // Get active session ID
+  const activeSessionId = activeSessionStore[userId] || null;
+  
+  // If no active session, return empty array
+  if (!activeSessionId) {
+    return [];
+  }
+  
+  // Get user's chat sessions
+  const userSessions = chatSessionStore[userId] || [];
+  
+  // Find the active session
+  const activeSession = userSessions.find(session => session.id === activeSessionId);
+  
+  // Return messages from active session, or empty array if not found
+  return activeSession ? activeSession.messages : [];
+};
+
+// Get all chat sessions for a user
+const getUserChatSessions = (userId: string): ChatSession[] => {
+  if (!chatSessionStore[userId] || chatSessionStore[userId].length === 0) {
+    // Create a default session if none exists
+    createChatSession(userId);
+  }
+  
+  // Return the user's sessions, sorted by most recently updated
+  return chatSessionStore[userId].sort((a, b) => 
+    b.updated_at.getTime() - a.updated_at.getTime()
+  );
+};
+
+// Create a new chat session
+const createChatSession = (userId: string, title: string = "New Chat"): ChatSession => {
+  // Generate session ID
+  const sessionId = `chat_${Date.now()}`;
+  
+  // Create new session
+  const newSession: ChatSession = {
+    id: sessionId,
+    title: title,
+    messages: [],
+    created_at: new Date(),
+    updated_at: new Date()
+  };
+  
+  // Ensure user has a sessions array
+  if (!chatSessionStore[userId]) {
+    chatSessionStore[userId] = [];
+  }
+  
+  // Add new session
+  chatSessionStore[userId].push(newSession);
+  
+  // Set as active session
+  activeSessionStore[userId] = sessionId;
+  
+  console.log(`Created new chat session for user ${userId}: ${sessionId} - ${title}`);
+  
+  return newSession;
+};
+
+// Clear current chat session
 const clearLocalMessages = (userId: string): void => {
-  console.log(`Attempting to clear messages for user ${userId}. Current count: ${messageStore[userId]?.length || 0}`);
+  console.log(`Attempting to clear messages for user ${userId}`);
   
-  // Ensure we reset to an empty array, not null or undefined
-  messageStore[userId] = [];
+  // Create a new empty chat session
+  createChatSession(userId, "New Chat");
   
-  // Verify that the messages were cleared
-  console.log(`Cleared messages for user ${userId}. New count: ${messageStore[userId]?.length || 0}`);
+  console.log(`Cleared messages by creating new chat session for user ${userId}`);
 };
 const addLocalMessage = (message: Omit<ChatMessage, "id" | "timestamp">): ChatMessage => {
   const userId = message.userId;
-  if (!messageStore[userId]) {
-    messageStore[userId] = [];
+  
+  // Get active session ID
+  let activeSessionId = activeSessionStore[userId];
+  
+  // If no active session exists, create one
+  if (!activeSessionId) {
+    const newSession = createChatSession(userId);
+    activeSessionId = newSession.id;
   }
   
+  // Get user's chat sessions
+  const userSessions = chatSessionStore[userId] || [];
+  
+  // Find the active session
+  const activeSessionIndex = userSessions.findIndex(session => session.id === activeSessionId);
+  
+  // If active session not found (which shouldn't happen), create one
+  if (activeSessionIndex === -1) {
+    const newSession = createChatSession(userId);
+    activeSessionId = newSession.id;
+    // Re-find the index after creating
+    const updatedSessions = chatSessionStore[userId] || [];
+    const newSessionIndex = updatedSessions.findIndex(session => session.id === activeSessionId);
+    
+    // Create the message
+    const now = new Date();
+    const newMessage: ChatMessage = {
+      ...message,
+      id: `msg_${Date.now()}`,
+      timestamp: now,
+    };
+    
+    // Add to new session
+    updatedSessions[newSessionIndex].messages.push(newMessage);
+    updatedSessions[newSessionIndex].updated_at = now;
+    
+    // Set the title of the chat session based on first user message if it's the first message
+    if (message.role === 'user' && updatedSessions[newSessionIndex].messages.length === 1) {
+      // Use the first 20 chars of the message as the title
+      updatedSessions[newSessionIndex].title = message.content.substring(0, 20) + 
+        (message.content.length > 20 ? '...' : '');
+    }
+    
+    console.log(`Stored message in new chat session for user ${userId}: ${newMessage.content.substring(0, 30)}...`);
+    return newMessage;
+  }
+  
+  // Create the message
   const now = new Date();
   const newMessage: ChatMessage = {
     ...message,
@@ -33,8 +151,18 @@ const addLocalMessage = (message: Omit<ChatMessage, "id" | "timestamp">): ChatMe
     timestamp: now,
   };
   
-  messageStore[userId].push(newMessage);
-  console.log(`Stored message locally for user ${userId}: ${newMessage.content.substring(0, 30)}...`);
+  // Add message to the active session
+  userSessions[activeSessionIndex].messages.push(newMessage);
+  userSessions[activeSessionIndex].updated_at = now;
+  
+  // Set the title of the chat session based on first user message if it's the first message
+  if (message.role === 'user' && userSessions[activeSessionIndex].messages.length === 1) {
+    // Use the first 20 chars of the message as the title
+    userSessions[activeSessionIndex].title = message.content.substring(0, 20) + 
+      (message.content.length > 20 ? '...' : '');
+  }
+  
+  console.log(`Stored message in chat session ${activeSessionId} for user ${userId}: ${newMessage.content.substring(0, 30)}...`);
   return newMessage;
 };
 
@@ -254,7 +382,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         has_image: false
       });
 
-      console.log("Messages in storage for user:", messageStore[userId].length);
+      // Get active session messages count
+      const activeSessionId = activeSessionStore[userId];
+      const userSessions = chatSessionStore[userId] || [];
+      const activeSession = userSessions.find(session => session.id === activeSessionId);
+      const messageCount = activeSession ? activeSession.messages.length : 0;
+      console.log("Messages in active chat session for user:", messageCount);
       console.log("Returning messages to client:", { 
         userMessageId: userMessage.id,
         aiMessageId: aiMessage.id 
@@ -504,6 +637,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error processing streaming message:', error);
       res.status(500).json({ message: 'Failed to process streaming message', error: String(error) });
+    }
+  });
+  
+  // Get chat sessions list
+  app.get("/api/chat-sessions", async (req, res) => {
+    // Skip authentication temporarily for testing
+    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+    
+    try {
+      const sessions = getUserChatSessions(userId);
+      
+      // Format for client usage - only return essential data
+      const formattedSessions = sessions.map(session => ({
+        id: session.id,
+        title: session.title,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        message_count: session.messages.length,
+        last_message: session.messages.length > 0 ? 
+          session.messages[session.messages.length - 1].content.substring(0, 30) + 
+          (session.messages[session.messages.length - 1].content.length > 30 ? '...' : '') : 
+          ''
+      }));
+      
+      res.json(formattedSessions);
+    } catch (error) {
+      console.error('Error fetching chat sessions:', error);
+      res.status(500).json({ message: 'Failed to fetch chat sessions' });
+    }
+  });
+  
+  // Get messages for a specific chat session
+  app.get("/api/chat-sessions/:sessionId", async (req, res) => {
+    // Skip authentication temporarily for testing
+    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+    const { sessionId } = req.params;
+    
+    try {
+      const sessions = getUserChatSessions(userId);
+      const session = sessions.find(s => s.id === sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Chat session not found' });
+      }
+      
+      res.json(session.messages);
+    } catch (error) {
+      console.error('Error fetching session messages:', error);
+      res.status(500).json({ message: 'Failed to fetch session messages' });
+    }
+  });
+  
+  // Activate a specific chat session
+  app.post("/api/chat-sessions/:sessionId/activate", async (req, res) => {
+    // Skip authentication temporarily for testing
+    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+    const { sessionId } = req.params;
+    
+    try {
+      const sessions = getUserChatSessions(userId);
+      const session = sessions.find(s => s.id === sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Chat session not found' });
+      }
+      
+      // Set as active session
+      activeSessionStore[userId] = sessionId;
+      
+      res.json({ success: true, message: 'Chat session activated' });
+    } catch (error) {
+      console.error('Error activating chat session:', error);
+      res.status(500).json({ message: 'Failed to activate chat session' });
     }
   });
   

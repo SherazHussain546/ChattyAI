@@ -33,13 +33,31 @@ export default function Home() {
   // Initialize streaming chat hook
   const { isStreaming, streamingContent, sendStreamingMessage } = useStreamingChat();
 
-  // Fetch messages
+  // Fetch messages for current chat
   const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ['/api/messages'],
     refetchInterval: 3000, // Refetch every 3 seconds to catch any missed messages
     staleTime: 1000, // Consider messages stale after 1 second
     refetchOnMount: true, // Always refetch when component mounts
     refetchOnWindowFocus: true // Refetch when window gets focus
+  });
+  
+  // Define chat session type
+  interface ChatSession {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    message_count: number;
+    last_message: string;
+  }
+  
+  // Fetch chat sessions for history
+  const { data: chatSessions = [], isLoading: sessionsLoading, refetch: refetchSessions } = useQuery<any[]>({
+    queryKey: ['/api/chat-sessions'],
+    refetchInterval: 5000, // Less frequent than messages
+    staleTime: 5000, // Consider sessions stale after 5 seconds
+    refetchOnMount: true // Always refetch when component mounts
   });
 
   // Fetch user preferences
@@ -320,6 +338,8 @@ export default function Home() {
                 
                 // Immediately refetch messages to show empty chat
                 await refetchMessages();
+                // Also refresh the chat sessions list
+                await refetchSessions();
                 setActiveTab("chat");
                 
                 console.log('Messages cleared, data refreshed');
@@ -345,33 +365,47 @@ export default function Home() {
         <div className="flex-1 overflow-auto p-2">
           <div className="mt-2 mb-4">
             <h3 className="text-xs font-semibold text-muted-foreground mb-2 px-2">Recent Chats</h3>
-            {messagesLoading ? (
+            {sessionsLoading ? (
               <div className="flex justify-center p-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ) : messages.length === 0 ? (
+            ) : chatSessions.length === 0 ? (
               <p className="text-xs text-muted-foreground px-2">No chat history</p>
             ) : (
               <div className="space-y-1">
-                {/* Simple history items - in a real app this would show unique chat threads */}
-                {Array.from(new Set(messages.filter(m => m.role === 'user').map(m => 
-                  m.timestamp ? new Date(m.timestamp).toLocaleDateString() : ''
-                ))).slice(0, 5).map((date, idx) => {
-                  const userMsgs = messages.filter(m => 
-                    m.role === 'user' && m.timestamp && new Date(m.timestamp).toLocaleDateString() === date
-                  );
-                  return userMsgs.length > 0 && (
-                    <Button
-                      key={idx}
-                      variant="ghost"
-                      className="w-full justify-start text-xs text-left px-2 py-2 h-auto overflow-hidden"
-                      onClick={() => setActiveTab("history")}
-                    >
-                      <MessageSquare className="h-3 w-3 mr-2 flex-shrink-0" />
-                      <span className="truncate">{userMsgs[0].content.substring(0, 25)}{userMsgs[0].content.length > 25 ? '...' : ''}</span>
-                    </Button>
-                  );
-                })}
+                {/* Display actual chat sessions */}
+                {chatSessions.map((session) => (
+                  <Button
+                    key={session.id}
+                    variant="ghost"
+                    className="w-full justify-start text-xs text-left px-2 py-2 h-auto overflow-hidden"
+                    onClick={async () => {
+                      try {
+                        // Activate this session
+                        await apiRequest('POST', `/api/chat-sessions/${session.id}/activate`);
+                        
+                        // Refetch messages to show the activated session
+                        await refetchMessages();
+                        
+                        // Switch to chat tab
+                        setActiveTab("chat");
+                        
+                        toast({
+                          description: "Loaded chat session",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to load chat session",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                  >
+                    <MessageSquare className="h-3 w-3 mr-2 flex-shrink-0" />
+                    <span className="truncate">{session.title}</span>
+                  </Button>
+                ))}
               </div>
             )}
           </div>
@@ -464,6 +498,8 @@ export default function Home() {
                       
                       // Immediately refetch messages to show empty chat
                       await refetchMessages();
+                      // Also refresh the chat sessions list
+                      await refetchSessions();
                       
                       console.log('Messages cleared, data refreshed (header button)');
                     } catch (error) {

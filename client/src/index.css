@@ -17,8 +17,12 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans bg-background text-foreground;
     margin: 0;
+    text-rendering: optimizeLegibility;
+    /* Use modern alternatives to problematic properties */
+    -webkit-font-smoothing: auto;
+    font-size-adjust: 100%;
   }
   
   /* Dark mode by default to match ChatGPT */

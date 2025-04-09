@@ -92,8 +92,19 @@ export function useStreamingChat() {
         `${cleanedContent} - Please respond to this brief message` : 
         cleanedContent;
       
-      // Create a new EventSource connection
-      const eventSource = new EventSource('/api/messages/stream');
+      // First, check if we already have an EventSource - if so, close it to prevent connection issues
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      
+      // Create a new EventSource connection - use full URL to avoid issues with relative paths
+      // Get current origin (protocol + host) to ensure the URL is absolute
+      const origin = window.location.origin;
+      const streamUrl = `${origin}/api/messages/stream`;
+      console.log("Creating EventSource connection to:", streamUrl);
+      
+      const eventSource = new EventSource(streamUrl);
       eventSourceRef.current = eventSource;
       
       // Send the message content via POST request
