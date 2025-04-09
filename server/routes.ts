@@ -136,11 +136,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error("Error processing image with Gemini Vision:", error);
           
-          // For the demo/project submission, provide a fallback response for the image
-          // This helps the project demo work even if the image API is not available
-          aiResponse = "I've analyzed your screenshot. It appears to be showing a web application interface. " +
-                      "I can see text content and UI elements that look like they're part of a chat or messaging interface. " +
-                      "The layout includes a navigation area and main content section typical of modern web applications.";
+          // Return a proper error message instead of a fake response
+          aiResponse = "I'm sorry, I couldn't analyze that image. Error: Failed to get image analysis from AI";
         }
       } else {
         // Get AI response using standard Gemini text model
@@ -204,6 +201,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add a console log to help with debugging
+  console.log("API is configured with Gemini API - text chat should be working");
+  try {
+    await getChatResponse("Hello, test message");
+    console.log("✅ Successfully tested Gemini API connection!");
+  } catch (e) {
+    console.error("⚠️ Error testing Gemini API connection:", e);
+    console.log("Please check your GEMINI_API_KEY environment variable");
+  }
+  
   const httpServer = createServer(app);
   return httpServer;
 }

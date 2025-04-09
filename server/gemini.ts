@@ -1,12 +1,12 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// Define the official model names from Google AI Studio
+// Define the official model names from Google AI Studio (as of April 2023)
 const MODELS = {
-  // Standard Google AI Studio models that are guaranteed to work
+  // The standard model that works reliably
   text: "gemini-pro",
-  // Use text model for both text and images
+  // For vision tasks, only gemini-pro currently supports both text and images consistently
   vision: "gemini-pro",  
-  // Same as primary models since these are the standard ones
+  // Fallbacks that are guaranteed to be available
   textFallback: "gemini-pro",  
   visionFallback: "gemini-pro"
 };
@@ -26,9 +26,9 @@ export interface ChatMessage {
  */
 export async function getChatResponse(message: string, history: ChatMessage[] = []): Promise<string> {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
       console.warn("GEMINI_API_KEY is not set. AI responses will not work properly.");
-      return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
+      return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured. Please make sure to add a valid Gemini API key.";
     }
 
     console.log("Using Gemini API with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
@@ -78,9 +78,9 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
  */
 export async function getImageChatResponse(message: string, imageBase64: string): Promise<string> {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
       console.warn("GEMINI_API_KEY is not set. AI responses will not work properly.");
-      return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
+      return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured. Please make sure to add a valid Gemini API key.";
     }
 
     console.log("Preparing to analyze image with Gemini Vision...");
@@ -161,7 +161,7 @@ export async function analyzeSentiment(text: string): Promise<{
   intensity: number;
 }> {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
       console.warn("GEMINI_API_KEY is not set. Sentiment analysis will not work properly.");
       return { mood: "neutral", intensity: 0.5 };
     }
@@ -213,7 +213,7 @@ export async function analyzeSentiment(text: string): Promise<{
  */
 export async function optimizeForSpeech(text: string): Promise<string> {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
       console.warn("GEMINI_API_KEY is not set. Speech optimization will not work properly.");
       return text;
     }

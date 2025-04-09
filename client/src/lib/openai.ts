@@ -22,6 +22,12 @@ interface ChatMessage {
 // Process text chat messages and get AI response
 export async function getChatResponse(message: string, history: ChatMessage[] = []): Promise<string> {
   try {
+    // Check if API key is available
+    if (!import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY.trim() === "") {
+      console.warn("VITE_GEMINI_API_KEY is not set. AI responses will not work properly.");
+      return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured. Please make sure to add a valid Gemini API key.";
+    }
+    
     // Try both current and fallback models
     let model;
     try {
@@ -77,21 +83,36 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
     return response.text();
   } catch (error) {
     console.error("Error getting chat response:", error);
-    throw new Error("Failed to get response from AI");
+    
+    // Handle specific API key errors
+    const errorMessage = String(error);
+    if (errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("expired")) {
+      return "I'm sorry, there was an error with the API key. It may have expired or be invalid. Please contact the administrator to update the API key.";
+    }
+    
+    // For unknown errors, return a generic message instead of throwing
+    return "I'm sorry, I couldn't generate a response. There was an error communicating with the AI service.";
   }
 }
 
 // Process image-based messages and get AI response
 export async function getImageChatResponse(message: string, imageBase64: string): Promise<string> {
   try {
-    // Use the standard gemini-pro model that's guaranteed to work with Google AI Studio
+    // Check if API key is available
+    if (!import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY.trim() === "") {
+      console.warn("VITE_GEMINI_API_KEY is not set. AI image responses will not work properly.");
+      return "I'm sorry, but I'm unable to analyze images at the moment. The AI service is not properly configured. Please make sure to add a valid Gemini API key.";
+    }
+    
+    // Use the gemini-pro model which is documented to work with multimodal content
+    // This is the most reliable approach for Google AI Studio
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro",  // Only gemini-pro works for vision on Google AI Studio
+      model: "gemini-pro", 
       generationConfig: {
-        temperature: 0.4,
+        temperature: 0.4,  // Lower temperature for more accurate image descriptions
         topK: 32,
         topP: 0.8,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,  // Increased for more detailed image descriptions
       }
     });
     console.log("Using Google AI Studio model with vision support: gemini-pro");
@@ -158,7 +179,15 @@ export async function getImageChatResponse(message: string, imageBase64: string)
     return response.text();
   } catch (error) {
     console.error("Error processing image:", error);
-    throw new Error("Failed to analyze image");
+    
+    // Handle specific API key errors
+    const errorMessage = String(error);
+    if (errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("expired")) {
+      return "I'm sorry, there was an error with the API key. It may have expired or be invalid. Please contact the administrator to update the API key.";
+    }
+    
+    // For unknown errors, return a generic message instead of throwing
+    return "I'm sorry, I couldn't analyze that image. There was an error with the image processing service.";
   }
 }
 
