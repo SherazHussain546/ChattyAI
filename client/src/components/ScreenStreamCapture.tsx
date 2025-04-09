@@ -178,14 +178,13 @@ export function ScreenStreamCapture({
     };
   }, [captureInterval, stream]);
   
-  // Toggle capture based on enabled prop
+  // Only respond to enable/disable through manual interaction
   useEffect(() => {
-    if (enabled && !isCapturing) {
-      startCapture();
-    } else if (!enabled && isCapturing) {
+    if (!enabled && isCapturing) {
       stopCapture();
     }
-  }, [enabled, isCapturing, startCapture, stopCapture]);
+    // We don't auto-start capture here to avoid the user gesture requirement error
+  }, [enabled, isCapturing, stopCapture]);
   
   return (
     <div className="relative">
@@ -203,23 +202,18 @@ export function ScreenStreamCapture({
         className="hidden" 
       />
       
-      {/* Controls */}
+      {/* Controls - Simplified for mobile UI */}
       <Button
         variant={isCapturing ? "destructive" : "default"}
         size="sm"
         onClick={() => isCapturing ? stopCapture() : startCapture()}
-        className="flex items-center gap-1"
+        className="flex items-center justify-center w-10 h-10 rounded-full"
+        title={isCapturing ? "Stop Screen Sharing" : "Share Screen"}
       >
         {isCapturing ? (
-          <>
-            <CameraOff className="h-4 w-4 mr-1" />
-            Stop Streaming
-          </>
+          <CameraOff className="h-5 w-5" />
         ) : (
-          <>
-            <Camera className="h-4 w-4 mr-1" />
-            Start Streaming
-          </>
+          <Camera className="h-5 w-5" />
         )}
       </Button>
       

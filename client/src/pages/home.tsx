@@ -28,7 +28,7 @@ export default function Home() {
   const [isScreenStreaming, setIsScreenStreaming] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [useStreamingResponse, setUseStreamingResponse] = useState(false);
-  const [screenAnalysis, setScreenAnalysis] = useState<string | null>(null);
+  const [screenAnalysis, setScreenAnalysis] = useState<string>("");
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const [_, navigate] = useLocation();
@@ -564,41 +564,56 @@ export default function Home() {
               </div>
             </div>
             
-            {/* The floating avatar and controls indicator */}
-            <div className="fixed top-2 right-2 z-10">
-              <div className="flex items-center gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-full border shadow-sm">
-                {/* Screen streaming indicator */}
-                {isScreenStreaming && (
-                  <span className="animate-pulse w-2 h-2 rounded-full bg-red-500 mr-1" title="Screen streaming active"></span>
-                )}
-                
-                {/* Speaking indicator */}
-                {isSpeaking && (
-                  <span className="animate-pulse w-2 h-2 rounded-full bg-green-500 mr-1" title="AI speaking"></span>
-                )}
+            {/* The floating avatar and controls indicator - moved to bottom right for better access */}
+            <div className="fixed bottom-20 right-4 z-10">
+              <div className="flex flex-col items-center gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm">
+                {/* Settings button at the top for easy access */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center justify-center w-10 h-10 rounded-full"
+                  onClick={() => setActiveTab("settings")}
+                  title="Settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
                 
                 {/* Screen streaming control */}
-                <ScreenStreamCapture 
-                  onAnalysisResult={(result) => {
-                    setScreenAnalysis(result);
-                    if (result) {
-                      // If we get new screen analysis, ask the AI about it
-                      handleSendMessage(`Can you analyze what's on my screen and help me with it? Here's what's detected: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
-                    }
-                  }}
-                  enabled={isScreenStreaming}
-                  onToggle={setIsScreenStreaming}
-                />
+                <div className="relative">
+                  <ScreenStreamCapture 
+                    onAnalysisResult={(result) => {
+                      setScreenAnalysis(result);
+                      if (result) {
+                        // If we get new screen analysis, ask the AI about it
+                        handleSendMessage(`Can you analyze what's on my screen and help me with it? Here's what's detected: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
+                      }
+                    }}
+                    enabled={isScreenStreaming}
+                    onToggle={setIsScreenStreaming}
+                  />
+                  
+                  {/* Screen streaming indicator */}
+                  {isScreenStreaming && (
+                    <span className="absolute top-0 right-0 animate-pulse w-3 h-3 rounded-full bg-red-500" title="Screen streaming active"></span>
+                  )}
+                </div>
                 
                 {/* Voice controls */}
-                <VoiceControls
-                  isListening={isListening}
-                  voiceEnabled={!!preferences?.voiceEnabled}
-                  onToggleListening={toggleListening}
-                  onToggleVoice={toggleVoice}
-                  isSpeechSupported={speechHandler.isRecognitionSupported()}
-                  disabled={isCapturingScreen || sendMessage.isPending}
-                />
+                <div className="relative">
+                  <VoiceControls
+                    isListening={isListening}
+                    voiceEnabled={!!preferences?.voiceEnabled}
+                    onToggleListening={toggleListening}
+                    onToggleVoice={toggleVoice}
+                    isSpeechSupported={speechHandler.isRecognitionSupported()}
+                    disabled={isCapturingScreen || sendMessage.isPending}
+                  />
+                  
+                  {/* Speaking indicator */}
+                  {isSpeaking && (
+                    <span className="absolute top-0 right-0 animate-pulse w-3 h-3 rounded-full bg-green-500" title="AI speaking"></span>
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>

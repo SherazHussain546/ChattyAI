@@ -20,18 +20,20 @@ export function VoiceControls({
   disabled = false,
 }: VoiceControlsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2">
+      {/* Microphone control */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
-              size="icon"
+              variant={isListening ? "destructive" : "default"}
+              size="sm"
               onClick={onToggleListening}
-              className={isListening ? "bg-red-100 dark:bg-red-900" : ""}
+              className="flex items-center justify-center w-10 h-10 rounded-full"
               disabled={!isSpeechSupported || disabled}
+              title={isListening ? "Stop listening" : "Start voice input"}
             >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -41,18 +43,21 @@ export function VoiceControls({
         </Tooltip>
       </TooltipProvider>
       
+      {/* Voice response control */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button 
-              variant="outline" 
-              size="icon" 
+              variant={voiceEnabled ? "default" : "secondary"} 
+              size="sm" 
               onClick={onToggleVoice}
+              className="flex items-center justify-center w-10 h-10 rounded-full"
               disabled={disabled}
+              title={voiceEnabled ? "Disable voice responses" : "Enable voice responses"}
             >
               {voiceEnabled ? 
-                <Volume2 className="h-4 w-4" /> : 
-                <VolumeX className="h-4 w-4" />
+                <Volume2 className="h-5 w-5" /> : 
+                <VolumeX className="h-5 w-5" />
               }
             </Button>
           </TooltipTrigger>
