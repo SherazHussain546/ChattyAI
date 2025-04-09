@@ -12,6 +12,14 @@ const MODELS = {
   visionFallback: "models/gemini-1.5-flash-002" // Using newer vision-capable models
 };
 
+// Direct API model names (no 'models/' prefix)
+const API_MODELS = {
+  text: "gemini-1.5-pro-latest",
+  vision: "gemini-1.5-flash-latest", 
+  textFallback: "gemini-1.5-flash", 
+  visionFallback: "gemini-1.5-flash-002"
+};
+
 // Let's add a function to list available models
 async function listAvailableModels() {
   try {
@@ -68,40 +76,85 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
 
     console.log("Using Gemini API with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
     
-    // Try both current and fallback models
-    let model;
-    try {
-      // First try the latest model
-      model = genAI.getGenerativeModel({ model: MODELS.text });
-      console.log("Using latest Gemini model:", MODELS.text);
-    } catch (e) {
-      // Fall back to standard model if latest isn't available
-      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
-      console.log("Falling back to standard Gemini model:", MODELS.textFallback);
-    }
-    
-    // Convert history and new message into a prompt
-    let prompt = "";
-    
-    // If there's history, format it as a conversation
-    if (history.length > 0) {
-      for (const msg of history) {
-        const role = msg.role === "user" ? "User" : "Assistant";
-        prompt += `${role}: ${msg.content}\n\n`;
+    // Define special training prompts (similar to what was provided in the user's example)
+    const trainingPrompt = [
+      {
+        "role": "user",
+        "parts": [{
+          "text": "This is Introductory dialogue for any prompt: 'Hello, I am ChattyAI. I can help you with anything you'd like to know about coding, technology, or any other topics.'"
+        }]
+      },
+      {
+        "role": "model",
+        "parts": [{
+          "text": "Understood. I will respond as ChattyAI."
+        }]
+      },
+      {
+        "role": "user",
+        "parts": [{
+          "text": "Special Dialogue: if any prompt mentions 'coding' word: 'I can definitely help with coding! I'm familiar with many programming languages and development concepts. Let me know which language or framework you're working with.'"
+        }]
+      },
+      {
+        "role": "model",
+        "parts": [{
+          "text": "Understood."
+        }]
       }
+    ];
+    
+    // Try direct API approach similar to the user's example code
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODELS.text}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    
+    // Prepare messages in the format expected by Gemini API
+    const messagesToSend = [
+      ...trainingPrompt
+    ];
+    
+    // Add conversation history
+    for (const msg of history) {
+      messagesToSend.push({
+        "role": msg.role === 'user' ? 'user' : 'model',
+        "parts": [{ "text": msg.content }]
+      });
     }
     
-    // Add the new message
-    prompt += `User: ${message}\n\nAssistant:`;
+    // Add the current message
+    messagesToSend.push({
+      "role": "user",
+      "parts": [{ "text": message }]
+    });
     
-    // Generate content
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+    // Make the direct API request
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        "contents": messagesToSend,
+        "generationConfig": {
+          "temperature": 0.7,
+          "topK": 32,
+          "topP": 0.95,
+          "maxOutputTokens": 4096
+        }
+      })
+    });
     
-    console.log("Gemini response:", text.substring(0, 100) + "...");
+    // Process the response
+    const responseData = await response.json();
     
-    return text;
+    if (responseData.candidates && responseData.candidates[0] && 
+        responseData.candidates[0].content && responseData.candidates[0].content.parts) {
+      const responseText = responseData.candidates[0].content.parts[0].text;
+      console.log("Gemini response:", responseText.substring(0, 50) + "...");
+      return responseText;
+    } else {
+      console.error("Unexpected response format from Gemini API:", responseData);
+      return "I apologize, but I encountered an issue processing your request. Could you try again with a different question?";
+    }
   } catch (error) {
     console.error("Error getting chat response from Gemini:", error);
     throw new Error("Failed to get response from AI");
@@ -133,7 +186,8 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
     
     console.log("Using Gemini API streaming with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
     
-    // Setup model with streaming capability
+    // For streaming, we'll still use the @google/generative-ai SDK directly
+    // as the direct API doesn't support streaming yet
     let model;
     try {
       model = genAI.getGenerativeModel({ 
@@ -159,38 +213,48 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
       console.log("Falling back to standard Gemini model for streaming:", MODELS.textFallback);
     }
     
-    // Prepare conversation history to include with the prompt
-    const chatHistory = history
-      .filter(msg => msg.content.trim() !== '') // Filter out empty messages
+    // Define training prompts (same as in getChatResponse for consistency)
+    const trainingPrompt = [
+      {
+        role: 'user',
+        parts: [{ text: "This is Introductory dialogue for any prompt: 'Hello, I am ChattyAI. I can help you with anything you'd like to know about coding, technology, or any other topics.'" }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: "Understood. I will respond as ChattyAI." }]
+      }
+    ];
+    
+    // Prepare conversation history
+    const formattedHistory = history
+      .filter(msg => msg.content.trim() !== '')
       .map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
       }));
     
-    // Start the chat
-    let chat;
+    // Combine training prompt and history
+    const chatHistory = [
+      ...trainingPrompt,
+      ...formattedHistory
+    ];
     
-    if (chatHistory.length > 0) {
-      // If we have history, create a proper chat session
-      chat = model.startChat({
-        history: chatHistory,
-        generationConfig: {
-          temperature: 0.7,
-          topK: 32,
-          topP: 0.9,
-          maxOutputTokens: 2048,
-        }
-      });
-    } else {
-      // Otherwise just use a simple chat
-      chat = model.startChat();
-    }
+    // Start the chat with all the history
+    const chat = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 32,
+        topP: 0.9,
+        maxOutputTokens: 4096,
+      }
+    });
     
-    console.log("Starting streaming response for prompt:", cleanMessage.substring(0, 50) + (cleanMessage.length > 50 ? "..." : ""));
+    console.log("Starting streaming response for prompt:", cleanMessage);
     
-    // Add a fallback if the message is too short or problematic
-    const safeMessage = cleanMessage.length < 3 ? 
-      `${cleanMessage} (Please respond to this short message from the user)` : 
+    // Add a fallback if the message is too short
+    const safeMessage = cleanMessage.length < 5 ? 
+      `${cleanMessage} (Please provide a helpful response to this short message)` : 
       cleanMessage;
     
     // Send the message and get streaming response
@@ -200,8 +264,10 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
     let fullResponse = "";
     for await (const chunk of result.stream) {
       const textChunk = chunk.text();
-      fullResponse += textChunk;
-      yield textChunk;
+      if (textChunk) {
+        fullResponse += textChunk;
+        yield textChunk;
+      }
     }
     
     console.log("Streaming complete. Full response:", fullResponse.substring(0, 100) + (fullResponse.length > 100 ? "..." : ""));

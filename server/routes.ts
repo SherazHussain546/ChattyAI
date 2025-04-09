@@ -123,7 +123,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Choose appropriate AI handler based on whether there's an image
       let aiResponse: string;
       
-      if (has_image && image_data) {
+      // Get previous messages for context
+      const previousMessages = getLocalMessages(userId);
+      const history = previousMessages
+        .filter(msg => msg.id !== userMessage.id) // Filter out the message we just added
+        .map(msg => ({
+          content: msg.content,
+          role: msg.role
+        }));
+      
+      // Special handling for very short messages which often cause issues with Gemini API
+      if (content.trim().length < 5 && !has_image) {
+        console.log("Message too short for streaming, using regular API");
+        
+        try {
+          if (process.env.GEMINI_API_KEY) {
+            // Define training prompts for consistency
+            const trainingPrompt = [
+              {
+                "role": "user",
+                "parts": [{
+                  "text": "This is Introductory dialogue for any prompt: 'Hello, I am ChattyAI. I can help you with anything you'd like to know about coding, technology, or any other topics.'"
+                }]
+              },
+              {
+                "role": "model",
+                "parts": [{
+                  "text": "Understood. I will respond as ChattyAI."
+                }]
+              }
+            ];
+            
+            // Prepare all messages in the required format
+            const messagesToSend = [...trainingPrompt];
+            
+            // Add conversation history
+            history.forEach(msg => {
+              messagesToSend.push({
+                "role": msg.role === 'user' ? 'user' : 'model',
+                "parts": [{ "text": msg.content }]
+              });
+            });
+            
+            // Add current message
+            messagesToSend.push({
+              "role": "user",
+              "parts": [{ "text": content }]
+            });
+            
+            // Direct API call without using the SDK
+            console.log("Using direct Gemini API call");
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${process.env.GEMINI_API_KEY}`;
+            
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                "contents": messagesToSend,
+                "generationConfig": {
+                  "temperature": 0.7,
+                  "topK": 32,
+                  "topP": 0.95,
+                  "maxOutputTokens": 2048
+                }
+              })
+            });
+            
+            const responseData = await response.json();
+            
+            if (responseData.candidates && responseData.candidates[0] && 
+                responseData.candidates[0].content && responseData.candidates[0].content.parts) {
+              aiResponse = responseData.candidates[0].content.parts[0].text;
+            } else {
+              aiResponse = "Hi there! How can I help you today?";
+            }
+          } else {
+            // Fallback to getChatResponse with a better prompt
+            aiResponse = await getChatResponse(content + " (Please respond even though this is a short message)");
+          }
+        } catch (error) {
+          console.error("Error with direct API call:", error);
+          aiResponse = "Hi there! How can I help you today?";
+        }
+      } 
+      else if (has_image && image_data) {
         console.log("Processing image with Gemini Vision...");
         try {
           // Extract the base64 data from the data URI if needed
@@ -142,7 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Get AI response using standard Gemini text model
         try {
-          aiResponse = await getChatResponse(messageData.content);
+          // Pass the conversation history for context
+          aiResponse = await getChatResponse(messageData.content, history);
         } catch (error) {
           console.error("Error getting chat response:", error);
           aiResponse = "I'm sorry, I couldn't generate a response. " + String(error);
@@ -242,43 +328,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send the AI message ID back to the client so it can track updates
       res.write(`data: ${JSON.stringify({ type: 'ai-message-start', id: placeholderAiMessage.id })}\n\n`);
-      
-      // Get streaming response generator
-      const streamingResponse = getStreamingChatResponse(messageData.content, getLocalMessages(userId));
-      
-      // Variable to accumulate the full response
-      let fullResponse = "";
-      
-      // Process streaming response
-      try {
-        for await (const chunk of streamingResponse) {
-          // Add the chunk to the full response
-          fullResponse += chunk;
+
+      // For very short messages, use non-streaming approach but simulate streaming
+      if (content.trim().length < 5) {
+        // Get all previous messages for this user to maintain conversation context
+        const previousMessages = getLocalMessages(userId);
+        const history = previousMessages
+          .filter(msg => msg.id !== userMessage.id) // Filter out the message we just added
+          .map(({ content, role }) => ({ content, role }));
           
-          // Send the chunk as an SSE event
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
-          
-          // Ensure chunks are sent immediately
-          // Use res.flushHeaders() if available (modern Express)
-          if (typeof res.flushHeaders === 'function') {
-            res.flushHeaders();
+        console.log("Message too short for streaming, using direct API call instead");
+        
+        try {
+          let aiResponse = "";
+            
+          if (process.env.GEMINI_API_KEY) {
+            // Define training prompts for consistency
+            const trainingPrompt = [
+              {
+                "role": "user",
+                "parts": [{
+                  "text": "This is Introductory dialogue for any prompt: 'Hello, I am ChattyAI. I can help you with anything you'd like to know about coding, technology, or any other topics.'"
+                }]
+              },
+              {
+                "role": "model",
+                "parts": [{
+                  "text": "Understood. I will respond as ChattyAI."
+                }]
+              }
+            ];
+            
+            // Prepare messages in the format expected by Gemini API
+            const messagesToSend = [...trainingPrompt];
+            
+            // Add conversation history
+            history.forEach(msg => {
+              messagesToSend.push({
+                "role": msg.role === 'user' ? 'user' : 'model',
+                "parts": [{ "text": msg.content }]
+              });
+            });
+            
+            // Add current message
+            messagesToSend.push({
+              "role": "user",
+              "parts": [{ "text": content }]
+            });
+            
+            // Direct API call for short messages
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${process.env.GEMINI_API_KEY}`;
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                "contents": messagesToSend,
+                "generationConfig": {
+                  "temperature": 0.7,
+                  "topK": 32,
+                  "topP": 0.95,
+                  "maxOutputTokens": 2048
+                }
+              })
+            });
+            
+            const responseData = await response.json();
+            
+            if (responseData.candidates && responseData.candidates[0] && 
+                responseData.candidates[0].content && responseData.candidates[0].content.parts) {
+              aiResponse = responseData.candidates[0].content.parts[0].text;
+            } else {
+              aiResponse = "Hi there! How can I help you today?";
+            }
+          } else {
+            aiResponse = await getChatResponse(content, history);
           }
+          
+          // Simulate streaming by sending the response in chunks
+          const chunks = aiResponse.match(/.{1,20}/g) || [aiResponse];
+          let fullResponse = "";
+          
+          for (const chunk of chunks) {
+            fullResponse += chunk;
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+            
+            // Ensure chunks are sent immediately
+            if (typeof res.flushHeaders === 'function') {
+              res.flushHeaders();
+            }
+            
+            // Add a small delay to simulate streaming
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Update the AI message with the complete response
+          placeholderAiMessage.content = fullResponse;
+          
+          // Send completion event
+          res.write(`data: ${JSON.stringify({ type: 'done', fullContent: fullResponse })}\n\n`);
+          
+          // End the response
+          res.end();
+          
+          console.log("Simulated streaming response completed successfully");
+        } catch (error) {
+          console.error("Error during simulated streaming:", error);
+          res.write(`data: ${JSON.stringify({ type: 'error', message: 'Streaming failed' })}\n\n`);
+          res.end();
         }
+      } else {
+        // Get streaming response generator
+        const streamingResponse = getStreamingChatResponse(messageData.content, getLocalMessages(userId));
         
-        // Update the AI message with the complete response
-        placeholderAiMessage.content = fullResponse;
+        // Variable to accumulate the full response
+        let fullResponse = "";
         
-        // Send completion event
-        res.write(`data: ${JSON.stringify({ type: 'done', fullContent: fullResponse })}\n\n`);
-        
-        // End the response
-        res.end();
-        
-        console.log("Streaming response completed successfully");
-      } catch (error) {
-        console.error("Error during streaming:", error);
-        res.write(`data: ${JSON.stringify({ type: 'error', message: 'Streaming failed' })}\n\n`);
-        res.end();
+        // Process streaming response
+        try {
+          for await (const chunk of streamingResponse) {
+            // Add the chunk to the full response
+            fullResponse += chunk;
+            
+            // Send the chunk as an SSE event
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+            
+            // Ensure chunks are sent immediately
+            if (typeof res.flushHeaders === 'function') {
+              res.flushHeaders();
+            }
+          }
+          
+          // Update the AI message with the complete response
+          placeholderAiMessage.content = fullResponse;
+          
+          // Send completion event
+          res.write(`data: ${JSON.stringify({ type: 'done', fullContent: fullResponse })}\n\n`);
+          
+          // End the response
+          res.end();
+          
+          console.log("Streaming response completed successfully");
+        } catch (error) {
+          console.error("Error during streaming:", error);
+          res.write(`data: ${JSON.stringify({ type: 'error', message: 'Streaming failed' })}\n\n`);
+          res.end();
+        }
       }
     } catch (error) {
       console.error('Error processing streaming message:', error);
