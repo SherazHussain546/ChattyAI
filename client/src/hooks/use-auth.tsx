@@ -40,6 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      // Show the Firebase setup instructions to help configure domains
+      const shouldProceed = window.confirm(
+        "To use Google Sign-In, you need to add this domain to your Firebase project's authorized domains. " +
+        "Would you like to continue with Google Sign-In anyway? (Cancel to use Guest login instead)"
+      );
+      
+      if (!shouldProceed) {
+        console.log("User canceled Google Sign-In, switching to guest login");
+        await signInAsGuest();
+        return user;
+      }
+      
       const result = await signInWithPopup(auth, googleProvider);
       await loadChatHistory(result.user.uid);
       return result.user;
@@ -51,10 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/unauthorized-domain') {
         // Fallback to guest login when domain is not authorized
         console.warn("Firebase domain not authorized. Falling back to guest login.");
+        
+        // Show a helpful error message
+        alert(
+          "Firebase Authentication Error: This domain is not authorized in your Firebase project. " +
+          "Use the 'Firebase Setup Instructions' button on the login page for help configuring your Firebase project. " +
+          "Continuing as a guest user instead."
+        );
+        
         await signInAsGuest();
         return user;
       } else {
-        throw error;
+        // For other errors, show the error and fall back to guest login
+        alert(`Authentication Error: ${error instanceof Error ? error.message : 'Unknown error'}. Continuing as guest.`);
+        await signInAsGuest();
+        return user;
       }
     }
   };
