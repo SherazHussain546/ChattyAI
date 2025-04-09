@@ -150,7 +150,19 @@ export default function Home() {
   
   // Handle sending a message with streaming
   const handleStreamingMessage = useCallback((content: string) => {
-    // Send the message using streaming
+    // Check if message is very short - if so, use regular API to avoid Gemini API streaming issues
+    if (content.trim().length < 5) {
+      console.log("Message too short for streaming, using regular API");
+      toast({
+        description: "Short messages use regular response mode for better reliability",
+      });
+      
+      // Use regular API for very short messages
+      sendMessage.mutate({ content, withScreenshot: false });
+      return;
+    }
+    
+    // Send the message using streaming for longer messages
     sendStreamingMessage(content, (completeMessage) => {
       // When streaming is complete, refresh messages
       console.log("Streaming complete, refreshing messages");
@@ -163,7 +175,7 @@ export default function Home() {
           .finally(() => setIsSpeaking(false));
       }
     });
-  }, [sendStreamingMessage, refetchMessages, preferences?.voiceEnabled]);
+  }, [sendStreamingMessage, refetchMessages, preferences?.voiceEnabled, sendMessage, toast]);
   
   // Handle sending a message
   const handleSendMessage = useCallback((content: string, withScreenshot?: boolean) => {
