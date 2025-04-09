@@ -84,9 +84,9 @@ export async function getImageChatResponse(message: string, imageBase64: string)
 
     console.log("Preparing to analyze image with Gemini Vision...");
     
-    // Get the vision model - use gemini-pro-vision for image analysis
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
-    console.log("Using Gemini model with image support: gemini-pro-vision");
+    // For Google AI Studio, only gemini-pro model supports both text and images
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    console.log("Using Gemini model with image support: gemini-pro");
     
     // Clean the base64 data if it has a data URL prefix
     let cleanedBase64 = imageBase64;
