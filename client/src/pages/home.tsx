@@ -253,23 +253,41 @@ export default function Home() {
         description: "Stopped listening",
       });
     } else {
+      // Add a visual indicator that we're starting to listen
+      setIsListening(true);
+      
+      // Play a little sound to indicate start of listening (if supported)
+      try {
+        const audio = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAASAAAeMwAUFBQUFCIiIiIiIjAwMDAwMD09PT09PUlJSUlJSVZWVlZWVmJiYmJiYm9vb29vb3t7e3t7e4iIiIiIiJSUlJSUlKCgoKCgoKysrKysrLi4uLi4uMTExMTExNDQ0NDQ0NfX19fX19jY2Nra2trc3Nzc3Nzf39/f39/l5eXl5eXq6urq6ur09PT09PT5+fn5+fn+/v7+/v4AAAA5TEFNRTMuMTAwA8MAAAAAAAAAABQgJAUHQQAB9gAAAjMPKi0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
+        audio.play().catch(e => console.error("Error playing audio:", e));
+      } catch (e) {
+        // Ignore errors, this is just a nice-to-have feature
+      }
+      
       const started = speechHandler.startListening((text) => {
-        handleSendMessage(text);
-        setIsListening(false);
-        toast({
-          description: "Message received from speech",
-        });
+        if (text && text.trim().length > 0) {
+          // Send the transcribed text to the chat
+          handleSendMessage(text);
+          
+          // Add a toast notification to confirm the message was received
+          toast({
+            description: "Voice message sent: " + (text.length > 30 ? text.substring(0, 30) + "..." : text),
+          });
+        }
       });
 
       if (!started) {
+        // If speech recognition failed to start
+        setIsListening(false);
         toast({
-          description: "Failed to start speech recognition",
+          title: "Speech Recognition Error",
+          description: "Failed to start speech recognition. Please check browser permissions.",
           variant: "destructive"
         });
       } else {
-        setIsListening(true);
+        // Success case
         toast({
-          description: "Listening for speech...",
+          description: "Listening for speech... Speak clearly and I'll respond both in text and voice.",
         });
       }
     }

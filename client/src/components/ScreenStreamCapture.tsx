@@ -157,11 +157,62 @@ export function ScreenStreamCapture({
       });
       
       const data = await response.json();
-      return data.analysis || null;
+      const analysis = data.analysis || null;
+      
+      if (analysis) {
+        // Enhance the analysis with questions
+        return formatAnalysisWithQuestions(analysis);
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error analyzing screenshot:', error);
       return null;
     }
+  };
+  
+  // Helper function to extract or generate questions from analysis
+  const formatAnalysisWithQuestions = (analysis: string): string => {
+    // If the analysis already has questions, return it
+    if (analysis.includes("?")) {
+      return analysis;
+    }
+    
+    // Otherwise, add suggested questions based on the content
+    const topics = extractTopics(analysis);
+    let formattedAnalysis = analysis + "\n\nBased on what I can see, you might want to ask:";
+    
+    // Add 2-3 relevant questions
+    topics.slice(0, 3).forEach(topic => {
+      formattedAnalysis += `\n- ${generateQuestionForTopic(topic)}`;
+    });
+    
+    return formattedAnalysis;
+  };
+  
+  // Helper to extract main topics from the analysis
+  const extractTopics = (text: string): string[] => {
+    // Simple extraction of potential key phrases
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    return sentences.map(s => s.trim()).slice(0, 5);
+  };
+  
+  // Generate a question based on a topic
+  const generateQuestionForTopic = (topic: string): string => {
+    // Remove common filler words for cleaner topic extraction
+    const cleanTopic = topic.replace(/I can see|There is|I notice|appears to be|it looks like/gi, "").trim();
+    
+    // Common question patterns
+    const questionPatterns = [
+      `How can I work with ${cleanTopic}?`,
+      `What are the key features of ${cleanTopic}?`,
+      `Can you explain more about ${cleanTopic}?`,
+      `What should I know about ${cleanTopic}?`,
+      `How do I use ${cleanTopic} effectively?`
+    ];
+    
+    // Select a random question pattern
+    return questionPatterns[Math.floor(Math.random() * questionPatterns.length)];
   };
   
   // Clean up on unmount
