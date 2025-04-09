@@ -28,8 +28,10 @@ export default function Home() {
   const [_, navigate] = useLocation();
 
   // Fetch messages
-  const { data: messages = [], isLoading: messagesLoading } = useQuery<ChatMessage[]>({
-    queryKey: ['/api/messages']
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<ChatMessage[]>({
+    queryKey: ['/api/messages'],
+    refetchInterval: 0, // Don't auto-refetch
+    staleTime: 0 // Always consider messages potentially stale
   });
 
   // Fetch user preferences
@@ -72,11 +74,17 @@ export default function Home() {
       return data;
     },
     onSuccess: async (data) => {
-      console.log("Message sent successfully, invalidating queries");
+      console.log("Message sent successfully, refreshing messages");
+      
+      // Immediately refetch messages to show the updated conversation
+      await refetchMessages();
+      
+      // Also invalidate the query cache to ensure it stays updated
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
 
       // Check if AI response exists
       if (data && data.aiMessage && data.aiMessage.content) {
+        // Process voice response
         if (preferences?.voiceEnabled) {
           setIsSpeaking(true);
           const success = await speechHandler.speak(data.aiMessage.content);
@@ -88,6 +96,9 @@ export default function Home() {
           }
           setIsSpeaking(false);
         }
+        
+        // Ensure messages are up to date after speech processing
+        refetchMessages();
       } else {
         console.error("Invalid AI response received:", data);
         toast({
@@ -119,9 +130,28 @@ export default function Home() {
   });
 
   // Handle sending a message
-  const handleSendMessage = (content: string, withScreenshot?: boolean) => {
+  const handleSendMessage = useCallback((content: string, withScreenshot?: boolean) => {
+    // Show a toast notification for longer operations
+    if (withScreenshot) {
+      toast({
+        description: "Processing image and generating response...",
+      });
+    }
+    
+    // Start the mutation process to send the message
     sendMessage.mutate({ content, withScreenshot });
-  };
+    
+    // Set a timer to refresh messages if the operation takes longer than expected
+    const refreshTimer = setTimeout(() => {
+      if (sendMessage.isPending) {
+        console.log("Message taking longer than expected, refreshing messages...");
+        refetchMessages();
+      }
+    }, 3000);
+    
+    // Clear the timer when component unmounts
+    return () => clearTimeout(refreshTimer);
+  }, [sendMessage, toast, refetchMessages]);
 
   // Toggle speech recognition
   const toggleListening = useCallback(() => {
@@ -152,7 +182,7 @@ export default function Home() {
         });
       }
     }
-  }, [isListening, toast]);
+  }, [isListening, toast, handleSendMessage]);
 
   // Toggle voice response
   const toggleVoice = useCallback(() => {
