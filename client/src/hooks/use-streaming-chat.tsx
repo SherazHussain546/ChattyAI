@@ -43,6 +43,16 @@ export function useStreamingChat() {
   // Send a message and receive a streaming response
   const sendStreamingMessage = useCallback(async (content: string, onComplete?: (message: ChatMessage) => void) => {
     try {
+      // Validate message content
+      if (!content || content.trim().length === 0) {
+        toast({
+          title: 'Empty Message',
+          description: 'Please enter a message before sending.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       // Close any existing connection first
       closeEventSource();
       
@@ -55,21 +65,35 @@ export function useStreamingChat() {
       
       console.log('Starting streaming chat request');
       
+      // Clean the content to prevent empty message errors
+      const cleanedContent = content.trim();
+      
+      // Make sure message is not too short (Gemini API has issues with very short messages)
+      const safeContent = cleanedContent.length < 3 ? 
+        `${cleanedContent} - Please respond to this brief message` : 
+        cleanedContent;
+      
       // Create a new EventSource connection
       const eventSource = new EventSource('/api/messages/stream');
       eventSourceRef.current = eventSource;
       
       // Send the message content via POST request
-      fetch('/api/messages/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content,
-          role: 'user',
-        }),
-      }).catch((error: unknown) => {
+      try {
+        const response = await fetch('/api/messages/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: safeContent,
+            role: 'user',
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+      } catch (error: unknown) {
         const errorMessage = error instanceof Error 
           ? error.message 
           : 'Unknown error occurred';
@@ -80,7 +104,13 @@ export function useStreamingChat() {
           variant: 'destructive',
         });
         closeEventSource();
-      });
+        setState({
+          isStreaming: false,
+          messageContent: '',
+          streamingMessageId: null,
+        });
+        return;
+      }
       
       // Set up event handlers for server-sent events
       eventSource.onmessage = (event) => {

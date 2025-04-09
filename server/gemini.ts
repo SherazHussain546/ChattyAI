@@ -114,12 +114,23 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
  */
 export async function* getStreamingChatResponse(message: string, history: ChatMessage[] = []) {
   try {
+    // Validate the message content
+    if (!message || message.trim() === "") {
+      console.warn("Empty message received in streaming API");
+      yield "I don't see any message content. Could you please provide a message?";
+      return;
+    }
+    
+    // Check for API key
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
       console.warn("GEMINI_API_KEY is not set. AI streaming responses will not work properly.");
       yield "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
       return;
     }
 
+    // Clean the message to ensure no problematic characters
+    const cleanMessage = message.trim();
+    
     console.log("Using Gemini API streaming with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
     
     // Setup model with streaming capability
@@ -149,10 +160,12 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
     }
     
     // Prepare conversation history to include with the prompt
-    const chatHistory = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
+    const chatHistory = history
+      .filter(msg => msg.content.trim() !== '') // Filter out empty messages
+      .map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+      }));
     
     // Start the chat
     let chat;
@@ -173,10 +186,15 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
       chat = model.startChat();
     }
     
-    console.log("Starting streaming response for prompt:", message.substring(0, 50) + "...");
+    console.log("Starting streaming response for prompt:", cleanMessage.substring(0, 50) + (cleanMessage.length > 50 ? "..." : ""));
+    
+    // Add a fallback if the message is too short or problematic
+    const safeMessage = cleanMessage.length < 3 ? 
+      `${cleanMessage} (Please respond to this short message from the user)` : 
+      cleanMessage;
     
     // Send the message and get streaming response
-    const result = await chat.sendMessageStream(message);
+    const result = await chat.sendMessageStream(safeMessage);
     
     // Yield each chunk as it arrives
     let fullResponse = "";
@@ -186,7 +204,7 @@ export async function* getStreamingChatResponse(message: string, history: ChatMe
       yield textChunk;
     }
     
-    console.log("Streaming complete. Full response:", fullResponse.substring(0, 100) + "...");
+    console.log("Streaming complete. Full response:", fullResponse.substring(0, 100) + (fullResponse.length > 100 ? "..." : ""));
     
   } catch (error) {
     console.error("Error in streaming chat response from Gemini:", error);
