@@ -252,24 +252,53 @@ export async function analyzeSentiment(text: string): Promise<{
   }
 }
 
-// Convert text to speech-optimized format 
+// Convert text to speech-optimized format with emphasis and natural pauses
 export async function optimizeForSpeech(text: string): Promise<string> {
   try {
     // Try appropriate model for speech optimization
     let model;
     try {
-      model = genAI.getGenerativeModel({ model: MODELS.text });
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.text,
+        generationConfig: {
+          temperature: 0.2, // Lower temperature for more consistent output
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1500, // Allow for longer text with markup
+        }
+      });
     } catch (e) {
-      model = genAI.getGenerativeModel({ model: MODELS.textFallback });
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.textFallback,
+        generationConfig: {
+          temperature: 0.2,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1500,
+        }
+      });
     }
     
     const promptText = `
-    Convert the following text into a more natural, speech-friendly format.
-    Remove special characters, format numbers for speech, and make it flow naturally when read aloud.
+    Convert the following text into a more natural, speech-friendly format optimized for text-to-speech engines.
     
-    Text to optimize: "${text}"
+    RULES:
+    1. Use *asterisks* around words or phrases that should be emphasized.
+    2. Add natural pauses where appropriate using the [pause:300] format, where the number is milliseconds.
+    3. Use [pause:500] for paragraph breaks and [pause:300] for sentence breaks that need emphasis.
+    4. Format numbers, abbreviations, and technical terms to be more speech-friendly.
+    5. Replace symbols with their spoken equivalents.
+    6. Improve punctuation to create better speech rhythm.
+    7. Keep all the original meaning and information intact.
     
-    Only return the optimized text, nothing else.
+    EXAMPLES:
+    - "Section 2.3: API Configuration" → "Section 2 point 3: [pause:300] *A P I Configuration*"
+    - "Results: 95% accuracy!" → "Results: [pause:300] *95 percent* accuracy!"
+    - "Open https://example.com" → "Open [pause:200] the example dot com website"
+    
+    Original text: "${text}"
+    
+    Return ONLY the optimized text with emphasis and pause markers, no explanations.
     `;
     
     const result = await model.generateContent(promptText);

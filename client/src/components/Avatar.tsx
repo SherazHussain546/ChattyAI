@@ -1,46 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { AvatarRenderer } from '@/lib/avatarUtils';
 
 interface AvatarProps {
   speaking: boolean;
   className?: string;
 }
 
-// Array of different AI avatar images
-const avatarVariants = [
-  "https://api.dicebear.com/7.x/bottts/svg?seed=gemini",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=aipowered",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=assistant",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=helper",
-  "https://api.dicebear.com/7.x/bottts/svg?seed=chatbot"
-];
-
 export function Avatar({ speaking, className }: AvatarProps) {
-  const [avatarIndex, setAvatarIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<AvatarRenderer | null>(null);
   
-  // Periodically change avatar to create a simple animation effect when speaking
+  // Initialize the 3D avatar
   useEffect(() => {
-    if (!speaking) return;
+    // Create a renderer if it doesn't exist
+    if (!rendererRef.current) {
+      rendererRef.current = new AvatarRenderer();
+    }
     
-    const interval = setInterval(() => {
-      setAvatarIndex(prev => (prev + 1) % avatarVariants.length);
-    }, 300);
+    // Initialize the renderer with the container
+    if (containerRef.current) {
+      rendererRef.current.init(containerRef.current);
+    }
     
-    return () => clearInterval(interval);
+    // Cleanup on unmount
+    return () => {
+      if (rendererRef.current) {
+        rendererRef.current.cleanup();
+      }
+    };
+  }, []);
+  
+  // Update speaking state
+  useEffect(() => {
+    if (!rendererRef.current) return;
+    
+    if (speaking) {
+      rendererRef.current.speak();
+    } else {
+      rendererRef.current.stopSpeaking();
+    }
   }, [speaking]);
   
   return (
     <Card className={cn(
       "overflow-hidden p-0 border-4", 
-      speaking ? "border-primary animate-pulse" : "border-transparent",
+      speaking ? "border-primary" : "border-transparent",
       className
     )}>
       <div className="aspect-square relative">
-        <img 
-          src={avatarVariants[avatarIndex]} 
-          alt="AI Avatar" 
-          className="w-full h-full object-cover"
+        <div 
+          ref={containerRef} 
+          className="w-full h-full"
         />
         {speaking && (
           <div className="absolute bottom-2 left-0 right-0 flex justify-center">

@@ -1,0 +1,222 @@
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/
+[HTTP/1.1 200 OK 500ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/separator.tsx
+[HTTP/1.1 304 Not Modified 231ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/alert.tsx
+[HTTP/1.1 304 Not Modified 123ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ChatInterface.tsx
+[HTTP/1.1 200 OK 349ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/VoiceControls.tsx?t=1744237465444
+[HTTP/1.1 200 OK 226ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ScreenStreamCapture.tsx?t=1744237895670
+[HTTP/1.1 304 Not Modified 112ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/lib/speechUtils.ts?t=1744237942217
+[HTTP/1.1 304 Not Modified 153ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/hooks/use-toast.ts
+[HTTP/1.1 304 Not Modified 147ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/hooks/use-streaming-chat.tsx
+[HTTP/1.1 304 Not Modified 145ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/lib/screenshotUtils.ts
+[HTTP/1.1 304 Not Modified 243ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/dropdown-menu.tsx
+[HTTP/1.1 200 OK 334ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/switch.tsx
+[HTTP/1.1 304 Not Modified 249ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/toast.tsx
+[HTTP/1.1 304 Not Modified 248ms]
+
+GET
+wss://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/?token=FMkJBF-2u6Hu
+[HTTP/1.1 101 Switching Protocols 423ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_app.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_firestore.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_storage.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/lib/utils.ts
+[HTTP/1.1 200 OK 114ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UMWMWBIR.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RH4CA3U7.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RBMNEPGM.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/tooltip.tsx
+[HTTP/1.1 304 Not Modified 199ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slot.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/class-variance-authority.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dropdown-menu.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/src/components/ui/label.tsx
+[HTTP/1.1 304 Not Modified 174ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-separator.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-switch.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/clsx.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/tailwind-merge.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2IEUUAVL.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJOJGLDH.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-6SPNF6KQ.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DVRSAWTS.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O2UA4OQB.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UIM5UIVC.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5LFIKY3M.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AYSQM7VZ.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4WIT4MX7.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EW3YKPYF.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-KBOKR7MG.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-7QG5QLT5.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3X2BLM77.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-label.js?v=77bf049c
+[HTTP/1.1 200 OK 0ms]
+
+Error in parsing value for ‘-webkit-text-size-adjust’.  Declaration dropped. e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev:141:29
+Unknown property ‘-moz-osx-font-smoothing’.  Declaration dropped. e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev:514:29
+GET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/favicon.ico
+[HTTP/1.1 200 OK 0ms]
+
+XHRPOST
+https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyDc3opydQnG6nDYHA00GiVAq79lXse3oSc
+[HTTP/3 200  238ms]
+
+XHRGET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/api/messages
+[HTTP/1.1 304 Not Modified 135ms]
+
+XHRPOST
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/api/messages
+[HTTP/1.1 200 OK 1252ms]
+
+XHRGET
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/api/messages/stream
+[HTTP/1.1 200 OK 207ms]
+
+XHRPOST
+https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/api/messages/stream
+[HTTP/1.1 200 OK 2250ms]
+
+Firefox can’t establish a connection to the server at https://e616715e-eaec-4020-9122-6152a1ab84b7-00-13gjypx58tteh.worf.replit.dev/api/messages/stream. use-streaming-chat.tsx:107:26
+SSE connection error: 
+error { target: EventSource, isTrusted: true, srcElement: EventSource, currentTarget: EventSource, eventPhase: 2, bubbles: false, cancelable: false, returnValue: true, defaultPrevented: false, composed: false, … }
+use-streaming-chat.tsx:231:16
+
+​
+

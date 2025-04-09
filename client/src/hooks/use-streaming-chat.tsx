@@ -98,16 +98,14 @@ export function useStreamingChat() {
         eventSourceRef.current = null;
       }
       
-      // Create a new EventSource connection - use full URL to avoid issues with relative paths
-      // Get current origin (protocol + host) to ensure the URL is absolute
-      const origin = window.location.origin;
-      const streamUrl = `${origin}/api/messages/stream`;
-      console.log("Creating EventSource connection to:", streamUrl);
+      // Don't use EventSource connection as it's causing issues in Firefox
+      // Instead, we'll use regular fetch with streaming response
+      console.log("Skipping EventSource connection - using fetch with streaming instead");
       
-      const eventSource = new EventSource(streamUrl);
-      eventSourceRef.current = eventSource;
+      // Create a placeholder for compatibility
+      eventSourceRef.current = null;
       
-      // Send the message content via POST request
+      // Send the message content via POST request and handle the response
       try {
         const response = await fetch('/api/messages/stream', {
           method: 'POST',
@@ -123,115 +121,66 @@ export function useStreamingChat() {
         if (!response.ok) {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : 'Unknown error occurred';
         
-        toast({
-          title: 'Error',
-          description: `Failed to send message: ${errorMessage}`,
-          variant: 'destructive',
-        });
-        closeEventSource();
+        // Process the response and extract the full content
+        const responseData = await response.json();
+        
+        if (responseData && responseData.content) {
+          // Simulate streaming by adding chunks of text with small delays
+          const textChunks = responseData.content.match(/.{1,10}/g) || [];
+          
+          // Set streaming message ID if available
+          if (responseData.id) {
+            setState(prev => ({
+              ...prev,
+              streamingMessageId: responseData.id,
+            }));
+          }
+          
+          // Add each chunk with a small delay to simulate streaming
+          for (const chunk of textChunks) {
+            setState(prev => ({
+              ...prev,
+              messageContent: prev.messageContent + chunk,
+            }));
+            
+            // Small delay between chunks (20-50ms)
+            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 30) + 20));
+          }
+          
+          // Construct the complete message
+          const completeMessage: ChatMessage = {
+            id: responseData.id || state.streamingMessageId || undefined,
+            content: responseData.content,
+            role: 'assistant',
+            timestamp: new Date().toISOString(),
+          };
+          
+          // Call the completion callback
+          if (onComplete) {
+            onComplete(completeMessage);
+          }
+        } else {
+          throw new Error('Invalid response format from server');
+        }
+        
+        // Reset state when complete
         setState({
           isStreaming: false,
           messageContent: '',
           streamingMessageId: null,
         });
-        return;
-      }
-      
-      // Set up event handlers for server-sent events
-      eventSource.onmessage = (event) => {
-        console.log('Received SSE message:', event.data);
-        try {
-          const data = JSON.parse(event.data) as StreamingEvent;
-          
-          switch (data.type) {
-            case 'user-message':
-              // User message has been received by server
-              console.log('User message received by server:', data.id);
-              break;
-              
-            case 'ai-message-start':
-              // AI is starting to respond
-              console.log('AI starting to respond, message ID:', data.id);
-              setState(prev => ({
-                ...prev,
-                streamingMessageId: data.id || null,
-              }));
-              break;
-              
-            case 'chunk':
-              // New chunk of AI's response
-              if (data.content) {
-                setState(prev => ({
-                  ...prev,
-                  messageContent: prev.messageContent + data.content,
-                }));
-              }
-              break;
-              
-            case 'done':
-              // Streaming is complete
-              console.log('Streaming complete, full response received');
-              const fullContent = data.fullContent || state.messageContent;
-              
-              // Construct the complete message
-              const completeMessage: ChatMessage = {
-                id: state.streamingMessageId || undefined,
-                content: fullContent,
-                role: 'assistant',
-                timestamp: new Date().toISOString(),
-              };
-              
-              // Call the completion callback
-              if (onComplete) {
-                onComplete(completeMessage);
-              }
-              
-              // Reset state
-              setState({
-                isStreaming: false,
-                messageContent: '',
-                streamingMessageId: null,
-              });
-              
-              // Close the connection
-              closeEventSource();
-              break;
-              
-            case 'error':
-              // Error occurred during streaming
-              console.error('Streaming error:', data.message);
-              toast({
-                title: 'Error',
-                description: data.message || 'An error occurred during streaming',
-                variant: 'destructive',
-              });
-              
-              // Reset state
-              setState({
-                isStreaming: false,
-                messageContent: '',
-                streamingMessageId: null,
-              });
-              
-              // Close the connection
-              closeEventSource();
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing SSE message:', error);
-        }
-      };
-      
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
+        
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Unknown error occurred';
+        
+        console.error('Error in streaming fetch:', error);
+        
         toast({
-          title: 'Connection Error',
-          description: 'Lost connection to the server during streaming response',
+          title: 'Error',
+          description: `Failed with message: ${errorMessage}`,
           variant: 'destructive',
         });
         
@@ -241,10 +190,8 @@ export function useStreamingChat() {
           messageContent: '',
           streamingMessageId: null,
         });
-        
-        // Close connection
-        closeEventSource();
-      };
+        return;
+      }
       
     } catch (error: unknown) {
       console.error('Error in sendStreamingMessage:', error);

@@ -20,9 +20,8 @@
     @apply font-sans bg-background text-foreground;
     margin: 0;
     text-rendering: optimizeLegibility;
-    /* Use modern alternatives without problematic properties */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    /* Remove problematic properties that cause CSS errors */
+    font-smoothing: antialiased;
   }
   
   /* Dark mode by default to match ChatGPT */

@@ -773,9 +773,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? image_data.split('base64,')[1] 
         : image_data;
       
-      // Get AI analysis using Gemini Vision
+      // Get AI analysis using Gemini Vision with improved prompt
       const analysis = await getImageChatResponse(
-        "Please analyze this screenshot and tell me what's happening on the screen. If you see text content, code, or data, please describe that in detail. Also, if you can identify any potential issues or opportunities for improvement based on what's visible, please mention them.", 
+        `Please analyze this screenshot carefully and respond with the following structure:
+        
+        1. CONTENT: First describe what you see on the screen in detail. If there's text, code, or data, include the key points.
+        
+        2. CONTEXT: Based on what you see, what is the user likely trying to do?
+        
+        3. QUESTIONS: Provide 3-4 specific questions that would be helpful to ask about what's on the screen. These should be directly related to what you see and help the user accomplish their likely task.
+        
+        4. SUGGESTIONS: If you can identify any potential issues or improvements based on what's visible, list them as bullet points.
+        
+        Keep your analysis clear and helpful, focusing on what would be most actionable for the user.`,
         base64Data
       );
       

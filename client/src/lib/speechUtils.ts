@@ -134,21 +134,45 @@ export class SpeechHandler {
       // Preprocess text for better speech quality
       const processedText = this.preprocessTextForSpeech(text);
       
-      // Break long text into sentences to improve speech flow
-      const sentences = processedText
-        .replace(/([.?!])\s*(?=[A-Z])/g, "$1|")
-        .split("|")
-        .filter(sentence => sentence.trim().length > 0);
+      // Handle custom pause markers in text (e.g., [pause:500] for a 500ms pause)
+      const pausePattern = /\[pause:(\d+)\]/g;
+      let cleanTextWithPauses = processedText.replace(pausePattern, '|pause=$1|');
       
-      let sentenceIndex = 0;
+      // Break long text into sentences for more natural flow
+      const sentencePattern = /([.?!])\s*(?=[A-Z])/g;
+      cleanTextWithPauses = cleanTextWithPauses.replace(sentencePattern, '$1|');
       
-      const speakNextSentence = () => {
-        if (sentenceIndex >= sentences.length) {
+      // Split text into segments (sentences and pause markers)
+      const segments = cleanTextWithPauses
+        .split('|')
+        .filter(segment => segment.trim().length > 0);
+      
+      let segmentIndex = 0;
+      
+      const processNextSegment = () => {
+        if (segmentIndex >= segments.length) {
           resolve(true);
           return;
         }
         
-        const sentence = sentences[sentenceIndex];
+        const segment = segments[segmentIndex];
+        
+        // Check if this segment is a pause marker
+        const pauseMatch = segment.match(/pause=(\d+)/);
+        if (pauseMatch) {
+          const pauseDuration = parseInt(pauseMatch[1], 10);
+          
+          // Add a natural pause
+          setTimeout(() => {
+            segmentIndex++;
+            processNextSegment();
+          }, pauseDuration);
+          
+          return;
+        }
+        
+        // Regular speech segment
+        const sentence = segment;
         const utterance = new SpeechSynthesisUtterance(sentence);
         
         // Select the best available voice
@@ -163,21 +187,41 @@ export class SpeechHandler {
         utterance.pitch = params.pitch;
         utterance.volume = params.volume;
         
+        // Detect emphasis markers for more expressive speech
+        if (sentence.includes('*') && sentence.split('*').length >= 3) {
+          // Emphasis detected, make this section slightly more prominent
+          utterance.pitch = params.pitch * 1.05;
+          utterance.rate = params.rate * 0.95;
+          
+          // Remove the emphasis markers
+          utterance.text = sentence.replace(/\*([^*]+)\*/g, '$1');
+        } else {
+          utterance.text = sentence;
+        }
+        
+        // Add breaths between sentences for more natural speech
+        if (segmentIndex > 0 && !segments[segmentIndex-1].includes('pause=')) {
+          // Add a very slight pause before starting this utterance
+          setTimeout(() => {
+            this.synthesis.speak(utterance);
+          }, 100);
+        } else {
+          this.synthesis.speak(utterance);
+        }
+        
         utterance.onend = () => {
-          sentenceIndex++;
-          speakNextSentence();
+          segmentIndex++;
+          processNextSegment();
         };
         
         utterance.onerror = (event) => {
           console.error('Speech synthesis error:', event);
-          sentenceIndex++;
-          speakNextSentence();
+          segmentIndex++;
+          processNextSegment();
         };
-        
-        this.synthesis.speak(utterance);
       };
       
-      speakNextSentence();
+      processNextSegment();
     });
   }
   
@@ -191,6 +235,14 @@ export class SpeechHandler {
     text = text.replace(/%/g, ' percent ');
     text = text.replace(/\$/g, ' dollars ');
     text = text.replace(/\+/g, ' plus ');
+    text = text.replace(/=/g, ' equals ');
+    text = text.replace(/≈/g, ' approximately equals ');
+    text = text.replace(/©/g, ' copyright ');
+    text = text.replace(/®/g, ' registered ');
+    text = text.replace(/™/g, ' trademark ');
+    
+    // Numbers with commas read better with spaces instead
+    text = text.replace(/(\d),(\d)/g, '$1 $2');
     
     // Fix technical terms that speech synthesis often struggles with
     text = text.replace(/API/g, 'A P I');
@@ -199,9 +251,26 @@ export class SpeechHandler {
     text = text.replace(/HTML/g, 'H T M L');
     text = text.replace(/CSS/g, 'C S S');
     text = text.replace(/JS/g, 'JavaScript');
+    text = text.replace(/JSON/g, 'J S O N');
+    text = text.replace(/HTTP/g, 'H T T P');
+    text = text.replace(/HTTPS/g, 'H T T P S');
+    text = text.replace(/SQL/g, 'S Q L');
+    text = text.replace(/IEEE/g, 'I triple E');
+    text = text.replace(/URL/g, 'U R L');
     
-    // Add pauses after sentences
-    text = text.replace(/\.\s/g, '. ');
+    // Add breathing pauses for better flow - use commas for short pause
+    text = text.replace(/\.(?=\s)/g, '., '); // Add slight pause after periods
+    text = text.replace(/\?\s/g, '? , '); // Add slight pause after questions
+    text = text.replace(/!\s/g, '! , '); // Add slight pause after exclamations
+    
+    // Add emphasis with slight pause before important phrases
+    text = text.replace(/\b(important|note that|remember|key point|crucial)\b/gi, ', $1');
+    
+    // Better pronunciation of numbers
+    text = text.replace(/(\d+)\.(\d+)/g, '$1 point $2'); // Better for decimals
+    
+    // Improve pronunciation of dashes in phrases
+    text = text.replace(/(\w)-(\w)/g, '$1 $2'); // Convert dashes to spaces for better flow
     
     return text;
   }
@@ -212,14 +281,39 @@ export class SpeechHandler {
       this.loadVoices();
     }
     
-    // Try to find a premium voice first (Google, Microsoft or natural-sounding voices)
+    // Create a priority ranking for modern, natural voices
+    const voicePriority = [
+      // Premium natural voices from various platforms
+      { name: 'Google UK English Female', lang: 'en-GB' },
+      { name: 'Google UK English Male', lang: 'en-GB' },
+      { name: 'Microsoft Libby Online', lang: 'en-GB' },
+      { name: 'Microsoft Ryan Online', lang: 'en-US' },
+      { name: 'Microsoft Guy Online', lang: 'en-US' },
+      { name: 'Microsoft Aria Online', lang: 'en-US' },
+      { name: 'Google US English', lang: 'en-US' },
+      { name: 'Microsoft David', lang: 'en-US' },
+      { name: 'Microsoft Zira', lang: 'en-US' },
+      { name: 'Samantha', lang: 'en-US' },
+      { name: 'Karen', lang: 'en-AU' },
+      { name: 'Daniel', lang: 'en-GB' },
+      { name: 'Moira', lang: 'en-IE' },
+      { name: 'Tessa', lang: 'en-ZA' },
+    ];
+    
+    // Try each voice in priority order
+    for (const priorityVoice of voicePriority) {
+      const voice = this.voices.find(v => 
+        v.name.includes(priorityVoice.name) && 
+        v.lang.startsWith(priorityVoice.lang)
+      );
+      if (voice) return voice;
+    }
+    
+    // Still no match? Try any premium-sounding voice
     const premiumVoice = this.voices.find(
       voice => voice.lang.startsWith('en') && (
         voice.name.includes('Google') || 
         voice.name.includes('Microsoft') ||
-        voice.name.includes('Daniel') || 
-        voice.name.includes('Samantha') ||
-        voice.name.includes('Karen') ||
         voice.name.includes('Natural')
       )
     );
@@ -250,22 +344,53 @@ export class SpeechHandler {
       volume: 1.0  // Full volume
     };
     
-    // Adjust based on content type
+    // Analyze content to determine context
+    const isQuestion = text.includes('?');
+    const isExplanation = text.includes('means') || text.includes('explain') || text.includes('because');
+    const isTechnical = text.includes('code') || text.includes('function') || text.includes('programming');
+    const isExcited = text.includes('!') || text.includes('wow') || text.includes('amazing');
+    const isLongContent = text.length > 100;
+    const containsNumbers = /\d+/.test(text);
     
-    // Questions - slightly higher pitch
-    if (text.includes('?')) {
+    // Apply context-based adjustments
+    if (isQuestion) {
+      // Questions should have slightly higher pitch and natural intonation
       params.pitch = 1.05;
+      params.rate = 0.98; // Slightly slower for question clarity
     }
     
-    // Explanations or long content - slightly slower rate
-    if (text.length > 100 && (text.includes('means') || text.includes('explain'))) {
+    if (isExplanation) {
+      // Explanations need to be clearer and slightly slower
       params.rate = 0.95;
+      params.pitch = 0.98; // Slightly deeper voice for authority
     }
     
-    // Technical content - slower to improve comprehension
-    if (text.includes('code') || text.includes('function') || text.includes('programming')) {
-      params.rate = 0.9;
+    if (isTechnical) {
+      // Technical content needs to be slower and very clear
+      params.rate = 0.92;
+      params.pitch = 0.98;
     }
+    
+    if (containsNumbers) {
+      // Slow down content with numbers for better comprehension
+      params.rate = Math.min(params.rate, 0.95);
+    }
+    
+    if (isExcited) {
+      // Excited content should be more energetic
+      params.pitch = 1.07;
+      params.rate = 1.03;
+      params.volume = 1.0;
+    }
+    
+    if (isLongContent) {
+      // Long content needs a comfortable listening rate
+      params.rate = Math.min(params.rate, 0.97);
+    }
+    
+    // Ensure rate stays within reasonable bounds for comprehension
+    params.rate = Math.max(0.9, Math.min(1.1, params.rate));
+    params.pitch = Math.max(0.9, Math.min(1.1, params.pitch));
     
     return params;
   }
