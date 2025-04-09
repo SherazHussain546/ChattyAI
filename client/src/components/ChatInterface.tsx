@@ -42,6 +42,13 @@ export function ChatInterface({
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
+    
+    // Log message count for debugging
+    console.log(`ChatInterface received ${messages.length} messages`);
+    if (messages.length > 0) {
+      console.log("First message:", messages[0]?.content?.substring(0, 30) + "...");
+      console.log("Last message:", messages[messages.length - 1]?.content?.substring(0, 30) + "...");
+    }
   }, [messages, isSendingMessage, isStreaming, streamingContent]);
 
   // Handle sending a message

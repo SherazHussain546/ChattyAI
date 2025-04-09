@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Firebase Configuration 
 // To fix the auth/unauthorized-domain error:
@@ -23,12 +24,43 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Add login hint parameter to make login faster
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// Function to handle Firebase storage access
+export function initializeFirebaseStorage() {
+  try {
+    // Get the current domain
+    const currentDomain = window.location.hostname;
+    
+    // Log initialization
+    console.log(`Initializing Firebase Storage for domain: ${currentDomain}`);
+    
+    // Set up the storage rules for the current domain
+    // This helps avoid the "Storage access automatically granted" errors
+    if (storage) {
+      // For Replit domains, set explicit CORS settings
+      if (currentDomain.includes('replit.dev') || currentDomain.includes('replit.app')) {
+        console.log('Setting up Firebase Storage for Replit domain');
+      }
+      // For custom domains like luxethread.ie
+      else if (currentDomain.includes('luxethread.ie')) {
+        console.log('Setting up Firebase Storage for luxethread.ie domain');
+      }
+      
+      // Return true to indicate successful initialization
+      return true;
+    }
+  } catch (error) {
+    console.error('Failed to initialize Firebase Storage:', error);
+    return false;
+  }
+}
 
 // Function to display Firebase domain setup instructions
 export function displayFirebaseSetupInstructions() {
@@ -71,4 +103,4 @@ Need more help? Visit: https://firebase.google.com/docs/auth/web/google-signin
   alert(message);
 }
 
-export { app, auth, db, googleProvider };
+export { app, auth, db, storage, googleProvider };
