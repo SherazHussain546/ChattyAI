@@ -25,7 +25,7 @@ export default function Home() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isCapturingScreen, setIsCapturingScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
-  const [useStreamingResponse, setUseStreamingResponse] = useState(true);
+  const [useStreamingResponse, setUseStreamingResponse] = useState(false);
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const [_, navigate] = useLocation();
@@ -290,10 +290,24 @@ export default function Home() {
           <Button 
             variant="outline" 
             className="w-full justify-start gap-2" 
-            onClick={() => {
-              // Refresh messages to start a new chat
-              refetchMessages();
-              setActiveTab("chat");
+            onClick={async () => {
+              // Clear messages for a new chat
+              try {
+                await apiRequest('POST', '/api/messages/clear');
+                toast({
+                  description: "Started a new chat",
+                });
+                // Refresh messages to show empty chat
+                await refetchMessages();
+                setActiveTab("chat");
+              } catch (error) {
+                console.error("Failed to clear chat:", error);
+                toast({
+                  title: "Error",
+                  description: "Failed to start a new chat",
+                  variant: "destructive"
+                });
+              }
             }}
           >
             <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">

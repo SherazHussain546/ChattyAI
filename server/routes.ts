@@ -11,6 +11,10 @@ import { UserPreferences, InsertUserPreferences } from "@shared/schema";
 // Messages storage
 const messageStore: Record<string, ChatMessage[]> = {};
 const getLocalMessages = (userId: string): ChatMessage[] => messageStore[userId] || [];
+const clearLocalMessages = (userId: string): void => {
+  messageStore[userId] = [];
+  console.log(`Cleared messages for user ${userId}`);
+};
 const addLocalMessage = (message: Omit<ChatMessage, "id" | "timestamp">): ChatMessage => {
   const userId = message.userId;
   if (!messageStore[userId]) {
@@ -255,6 +259,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error processing message:', error);
       res.status(500).json({ message: 'Failed to process message', error: String(error) });
+    }
+  });
+
+  // Clear messages for a new chat
+  app.post("/api/messages/clear", async (req, res) => {
+    try {
+      // Use a default user ID for testing if not authenticated
+      const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+      
+      // Clear all messages for this user
+      clearLocalMessages(userId);
+      
+      res.json({ success: true, message: "Chat history cleared" });
+    } catch (error) {
+      console.error('Error clearing messages:', error);
+      res.status(500).json({ success: false, message: 'Failed to clear chat history' });
     }
   });
 
