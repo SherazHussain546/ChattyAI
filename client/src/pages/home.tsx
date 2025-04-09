@@ -57,7 +57,8 @@ export default function Home() {
     queryKey: ['/api/chat-sessions'],
     refetchInterval: 5000, // Less frequent than messages
     staleTime: 5000, // Consider sessions stale after 5 seconds
-    refetchOnMount: true // Always refetch when component mounts
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true // Refetch when window gets focus
   });
 
   // Fetch user preferences

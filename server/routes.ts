@@ -55,6 +55,21 @@ const getUserChatSessions = (userId: string): ChatSession[] => {
   );
 };
 
+// Format chat sessions for API response
+const formatChatSessionsForApi = (sessions: ChatSession[]) => {
+  return sessions.map(session => ({
+    id: session.id,
+    title: session.title,
+    created_at: session.created_at.toISOString(),
+    updated_at: session.updated_at.toISOString(),
+    message_count: session.messages.length,
+    last_message: session.messages.length > 0 ? 
+      session.messages[session.messages.length - 1].content.substring(0, 30) + 
+        (session.messages[session.messages.length - 1].content.length > 30 ? '...' : '') 
+      : 'Empty chat'
+  }));
+};
+
 // Create a new chat session
 const createChatSession = (userId: string, title: string = "New Chat"): ChatSession => {
   // Generate session ID
@@ -444,6 +459,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update preferences' });
     }
   });
+  
+
 
   // Streaming endpoint for real-time chat responses
   app.post("/api/messages/stream", async (req, res) => {
@@ -472,6 +489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      // Add CORS headers for streaming
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
       
       // Send the user message ID back to the client
       res.write(`data: ${JSON.stringify({ type: 'user-message', id: userMessage.id })}\n\n`);
