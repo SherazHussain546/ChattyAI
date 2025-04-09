@@ -79,6 +79,15 @@ export interface UserPreferences {
   updatedAt?: string;
 }
 
+// Streaming responses interface
+export interface StreamingEvent {
+  type: 'user-message' | 'ai-message-start' | 'chunk' | 'done' | 'error';
+  id?: string;
+  content?: string;
+  fullContent?: string;
+  message?: string;
+}
+
 // Firebase User type
 export type FirebaseUser = {
   uid: string;

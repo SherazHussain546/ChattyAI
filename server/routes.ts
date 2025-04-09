@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { insertMessageSchema, insertPreferencesSchema, ChatMessage } from "@shared/schema";
-import { getChatResponse, getImageChatResponse } from "./gemini";
+import { getChatResponse, getImageChatResponse, getStreamingChatResponse } from "./gemini";
 import { setupAuth } from "./auth";
 // No Firebase storage import - using local storage instead
 
@@ -201,6 +201,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Streaming endpoint for real-time chat responses
+  app.post("/api/messages/stream", async (req, res) => {
+    console.log("POST /api/messages/stream received");
+    
+    try {
+      // Extract message content
+      const { content, role } = req.body;
+      console.log(`Streaming request for: "${content.substring(0, 30)}..."`);
+      
+      // Use a default user ID for testing if not authenticated
+      const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+      
+      // Validate the message data
+      const messageData = insertMessageSchema.parse({ content, role });
+
+      // Store user message locally
+      const userMessage = addLocalMessage({
+        content: messageData.content,
+        role: "user",
+        userId: userId,
+        has_image: false
+      });
+
+      // Set up SSE (Server-Sent Events)
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      
+      // Send the user message ID back to the client
+      res.write(`data: ${JSON.stringify({ type: 'user-message', id: userMessage.id })}\n\n`);
+      
+      // Create a placeholder for the AI message to be updated later
+      const placeholderAiMessage = addLocalMessage({
+        content: "",  // Start with empty content
+        role: "assistant",
+        userId: userId,
+        has_image: false
+      });
+      
+      // Send the AI message ID back to the client so it can track updates
+      res.write(`data: ${JSON.stringify({ type: 'ai-message-start', id: placeholderAiMessage.id })}\n\n`);
+      
+      // Get streaming response generator
+      const streamingResponse = getStreamingChatResponse(messageData.content, getLocalMessages(userId));
+      
+      // Variable to accumulate the full response
+      let fullResponse = "";
+      
+      // Process streaming response
+      try {
+        for await (const chunk of streamingResponse) {
+          // Add the chunk to the full response
+          fullResponse += chunk;
+          
+          // Send the chunk as an SSE event
+          res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+          
+          // Ensure chunks are sent immediately
+          // Use res.flushHeaders() if available (modern Express)
+          if (typeof res.flushHeaders === 'function') {
+            res.flushHeaders();
+          }
+        }
+        
+        // Update the AI message with the complete response
+        placeholderAiMessage.content = fullResponse;
+        
+        // Send completion event
+        res.write(`data: ${JSON.stringify({ type: 'done', fullContent: fullResponse })}\n\n`);
+        
+        // End the response
+        res.end();
+        
+        console.log("Streaming response completed successfully");
+      } catch (error) {
+        console.error("Error during streaming:", error);
+        res.write(`data: ${JSON.stringify({ type: 'error', message: 'Streaming failed' })}\n\n`);
+        res.end();
+      }
+    } catch (error) {
+      console.error('Error processing streaming message:', error);
+      res.status(500).json({ message: 'Failed to process streaming message', error: String(error) });
+    }
+  });
+  
+  // File upload endpoint for document analysis
+  app.post("/api/upload", async (req, res) => {
+    // Skip authentication temporarily for testing
+    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+    
+    try {
+      // This is a simple implementation - in production you'd use a proper file upload middleware
+      const { fileName, fileContent, fileType } = req.body;
+      
+      // For now, just return a placeholder response
+      // In production, you'd process the document with Gemini
+      res.json({ 
+        success: true, 
+        message: `File ${fileName} received. This would be processed with Gemini API in production.` 
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ success: false, message: 'Failed to upload file' });
+    }
+  });
+  
   // Add a console log to help with debugging
   console.log("API is configured with Gemini API - text chat should be working");
   try {

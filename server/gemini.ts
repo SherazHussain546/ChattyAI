@@ -5,11 +5,11 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 const MODELS = {
   // Using the models that are actually available in the API (from the model list)
   text: "models/gemini-1.5-pro-latest",
-  // Vision model for image analysis
-  vision: "models/gemini-1.0-pro-vision-latest",  
+  // Vision model for image analysis - updated to use newer model that isn't deprecated
+  vision: "models/gemini-1.5-flash-latest",  
   // Fallbacks to older versions if needed
-  textFallback: "models/gemini-1.5-flash-latest",  
-  visionFallback: "models/gemini-pro-vision"
+  textFallback: "models/gemini-1.5-flash",  
+  visionFallback: "models/gemini-1.5-flash-002" // Using newer vision-capable models
 };
 
 // Let's add a function to list available models
@@ -55,6 +55,9 @@ export interface ChatMessage {
 
 /**
  * Get chat response from Gemini Pro
+ */
+/**
+ * Standard non-streaming chat response
  */
 export async function getChatResponse(message: string, history: ChatMessage[] = []): Promise<string> {
   try {
@@ -102,6 +105,92 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
   } catch (error) {
     console.error("Error getting chat response from Gemini:", error);
     throw new Error("Failed to get response from AI");
+  }
+}
+
+/**
+ * Streaming version of chat response for real-time updates
+ * @returns An async generator that yields chunks of response text
+ */
+export async function* getStreamingChatResponse(message: string, history: ChatMessage[] = []) {
+  try {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === "") {
+      console.warn("GEMINI_API_KEY is not set. AI streaming responses will not work properly.");
+      yield "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
+      return;
+    }
+
+    console.log("Using Gemini API streaming with key:", process.env.GEMINI_API_KEY?.substring(0, 5) + "...");
+    
+    // Setup model with streaming capability
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.text,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 32,
+          topP: 0.9,
+          maxOutputTokens: 2048,
+        }
+      });
+      console.log("Using latest Gemini model for streaming:", MODELS.text);
+    } catch (e) {
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.textFallback,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 32,
+          topP: 0.9,
+          maxOutputTokens: 2048,
+        }
+      });
+      console.log("Falling back to standard Gemini model for streaming:", MODELS.textFallback);
+    }
+    
+    // Prepare conversation history to include with the prompt
+    const chatHistory = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+    
+    // Start the chat
+    let chat;
+    
+    if (chatHistory.length > 0) {
+      // If we have history, create a proper chat session
+      chat = model.startChat({
+        history: chatHistory,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 32,
+          topP: 0.9,
+          maxOutputTokens: 2048,
+        }
+      });
+    } else {
+      // Otherwise just use a simple chat
+      chat = model.startChat();
+    }
+    
+    console.log("Starting streaming response for prompt:", message.substring(0, 50) + "...");
+    
+    // Send the message and get streaming response
+    const result = await chat.sendMessageStream(message);
+    
+    // Yield each chunk as it arrives
+    let fullResponse = "";
+    for await (const chunk of result.stream) {
+      const textChunk = chunk.text();
+      fullResponse += textChunk;
+      yield textChunk;
+    }
+    
+    console.log("Streaming complete. Full response:", fullResponse.substring(0, 100) + "...");
+    
+  } catch (error) {
+    console.error("Error in streaming chat response from Gemini:", error);
+    yield "I'm sorry, but I'm unable to generate a streaming response at the moment. Please try again later.";
   }
 }
 

@@ -9,6 +9,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useStreamingChat } from "@/hooks/use-streaming-chat";
 import { captureScreenshot } from "@/lib/screenshotUtils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
@@ -23,9 +24,13 @@ export default function Home() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isCapturingScreen, setIsCapturingScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
+  const [useStreamingResponse, setUseStreamingResponse] = useState(true);
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const [_, navigate] = useLocation();
+  
+  // Initialize streaming chat hook
+  const { isStreaming, streamingContent, sendStreamingMessage } = useStreamingChat();
 
   // Fetch messages
   const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<ChatMessage[]>({
@@ -129,29 +134,66 @@ export default function Home() {
     }
   });
 
+  // Handle file upload
+  const handleFileUpload = useCallback((file: File) => {
+    toast({
+      description: "Processing file and generating response...",
+    });
+    
+    // TODO: Implement file upload and processing
+    console.log("File upload requested:", file.name);
+    
+    // For now, just echo back the file name in a message
+    const content = `Analyzing file: ${file.name}`;
+    sendMessage.mutate({ content, withScreenshot: false });
+  }, [sendMessage, toast]);
+  
+  // Handle sending a message with streaming
+  const handleStreamingMessage = useCallback((content: string) => {
+    // Send the message using streaming
+    sendStreamingMessage(content, (completeMessage) => {
+      // When streaming is complete, refresh messages
+      console.log("Streaming complete, refreshing messages");
+      refetchMessages();
+      
+      // Process voice if enabled
+      if (preferences?.voiceEnabled && completeMessage.content) {
+        setIsSpeaking(true);
+        speechHandler.speak(completeMessage.content)
+          .finally(() => setIsSpeaking(false));
+      }
+    });
+  }, [sendStreamingMessage, refetchMessages, preferences?.voiceEnabled]);
+  
   // Handle sending a message
   const handleSendMessage = useCallback((content: string, withScreenshot?: boolean) => {
-    // Show a toast notification for longer operations
-    if (withScreenshot) {
-      toast({
-        description: "Processing image and generating response...",
-      });
-    }
-    
-    // Start the mutation process to send the message
-    sendMessage.mutate({ content, withScreenshot });
-    
-    // Set a timer to refresh messages if the operation takes longer than expected
-    const refreshTimer = setTimeout(() => {
-      if (sendMessage.isPending) {
-        console.log("Message taking longer than expected, refreshing messages...");
-        refetchMessages();
+    // For screenshots or when streaming is disabled, use the standard approach
+    if (withScreenshot || !useStreamingResponse) {
+      // Show a toast notification for longer operations
+      if (withScreenshot) {
+        toast({
+          description: "Processing image and generating response...",
+        });
       }
-    }, 3000);
-    
-    // Clear the timer when component unmounts
-    return () => clearTimeout(refreshTimer);
-  }, [sendMessage, toast, refetchMessages]);
+      
+      // Start the mutation process to send the message
+      sendMessage.mutate({ content, withScreenshot });
+      
+      // Set a timer to refresh messages if the operation takes longer than expected
+      const refreshTimer = setTimeout(() => {
+        if (sendMessage.isPending) {
+          console.log("Message taking longer than expected, refreshing messages...");
+          refetchMessages();
+        }
+      }, 3000);
+      
+      // Clear the timer when component unmounts
+      return () => clearTimeout(refreshTimer);
+    } else {
+      // Use streaming for text-only messages when enabled
+      handleStreamingMessage(content);
+    }
+  }, [sendMessage, toast, refetchMessages, useStreamingResponse, handleStreamingMessage]);
 
   // Toggle speech recognition
   const toggleListening = useCallback(() => {
@@ -303,8 +345,12 @@ export default function Home() {
               <ChatInterface
                 messages={messages}
                 onSendMessage={handleSendMessage}
+                onUploadFile={handleFileUpload}
                 isCapturingScreen={isCapturingScreen}
                 isSendingMessage={sendMessage.isPending}
+                isStreaming={isStreaming}
+                streamingContent={streamingContent}
+                useStreaming={useStreamingResponse}
               />
             </div>
           </TabsContent>
@@ -426,6 +472,19 @@ export default function Home() {
                       onClick={toggleTheme}
                     >
                       Toggle Theme
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Streaming Responses</h3>
+                      <p className="text-sm text-muted-foreground">Enable real-time streaming of AI responses</p>
+                    </div>
+                    <Button
+                      variant={useStreamingResponse ? "default" : "outline"}
+                      onClick={() => setUseStreamingResponse(!useStreamingResponse)}
+                    >
+                      {useStreamingResponse ? "Enabled" : "Disabled"}
                     </Button>
                   </div>
                 </CardContent>
