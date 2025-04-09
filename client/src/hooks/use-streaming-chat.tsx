@@ -43,11 +43,30 @@ export function useStreamingChat() {
   // Send a message and receive a streaming response
   const sendStreamingMessage = useCallback(async (content: string, onComplete?: (message: ChatMessage) => void) => {
     try {
-      // Validate message content
+      // Validate message content and user authentication
       if (!content || content.trim().length === 0) {
         toast({
           title: 'Empty Message',
           description: 'Please enter a message before sending.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!user) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please sign in to use the chat.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check network connectivity
+      if (!navigator.onLine) {
+        toast({
+          title: 'No Internet Connection',
+          description: 'Please check your internet connection and try again.',
           variant: 'destructive',
         });
         return;

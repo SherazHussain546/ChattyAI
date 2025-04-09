@@ -33,7 +33,7 @@ export function ChatInterface({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
+
   // Scroll to bottom when messages change or streaming updates
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -50,7 +50,7 @@ export function ChatInterface({
     onSendMessage(message);
     setMessage('');
   };
-  
+
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -58,14 +58,14 @@ export function ChatInterface({
       setSelectedFile(files[0]);
     }
   };
-  
+
   // Handle file upload button click
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-  
+
   // Handle submitting the selected file
   const handleFileUpload = () => {
     if (selectedFile && onUploadFile) {
@@ -114,7 +114,7 @@ export function ChatInterface({
               <p className="text-muted-foreground">Ask me anything or upload a file to analyze</p>
             </div>
           )}
-          
+
           {/* Show streaming response in real-time */}
           {isStreaming && streamingContent && (
             <div className="py-5 px-4 bg-muted border-b border-border/20">
@@ -133,7 +133,7 @@ export function ChatInterface({
               </div>
             </div>
           )}
-          
+
           {/* Regular loading indicator */}
           {isSendingMessage && !isStreaming && (
             <div className="py-5 px-4 bg-muted border-b border-border/20">
@@ -148,7 +148,7 @@ export function ChatInterface({
               </div>
             </div>
           )}
-          
+
           {/* File upload preview if a file is selected */}
           {selectedFile && (
             <div className="py-5 px-4 bg-background border-b border-border/20">
@@ -195,12 +195,12 @@ export function ChatInterface({
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Message ChattyAI..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                placeholder={isSendingMessage ? "Sending message..." : "Message ChattyAI..."}
+                onKeyPress={(e) => e.key === 'Enter' && !isSendingMessage && handleSend()}
                 disabled={!user || isSendingMessage || isCapturingScreen}
-                className="pr-[100px] py-6 text-base"
+                className={`pr-[100px] py-6 text-base ${isSendingMessage ? 'opacity-70' : ''}`}
               />
-              
+
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {/* File upload button */}
                 <Button
@@ -213,7 +213,7 @@ export function ChatInterface({
                 >
                   <UploadCloud className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Submit button */}
                 <Button 
                   size="icon"
@@ -226,7 +226,7 @@ export function ChatInterface({
                   </svg>
                 </Button>
               </div>
-              
+
               {/* Hidden file input */}
               <input
                 type="file"
@@ -236,7 +236,7 @@ export function ChatInterface({
                 accept=".pdf,.doc,.docx,.txt,.csv,.json,image/*"
               />
             </div>
-            
+
             <div className="flex justify-between">
               <div className="flex gap-2">
                 {/* Screenshot button */}
@@ -249,7 +249,7 @@ export function ChatInterface({
                   {isCapturingScreen ? "Capturing..." : "Take Screenshot"}
                 </Button>
               </div>
-              
+
               {/* Status indicators */}
               <div className="text-xs text-muted-foreground italic flex items-center">
                 {isCapturingScreen && "Capturing your screen..."}
@@ -262,7 +262,7 @@ export function ChatInterface({
                 )}
               </div>
             </div>
-            
+
             <div className="text-center text-xs text-muted-foreground">
               ChattyAI can make mistakes. Consider checking important information.
             </div>
