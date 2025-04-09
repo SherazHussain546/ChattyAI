@@ -400,6 +400,43 @@ export default function Home() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {/* Chat Tab - Main interface */}
           <TabsContent value="chat" className="flex-1 overflow-hidden data-[state=active]:flex flex-col">
+            {/* Header with navigation buttons */}
+            <div className="flex items-center justify-between p-3 border-b">
+              <h2 className="text-xl font-semibold flex items-center">
+                <MessageSquare className="mr-2 h-5 w-5" />
+                ChattyAI
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={() => setActiveTab("profile")}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">Profile</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={() => setActiveTab("settings")}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={toggleTheme}
+                >
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                </Button>
+              </div>
+            </div>
+            
             <div className="flex-1 overflow-auto relative">
               <div className="absolute inset-0">
                 <ChatInterface
