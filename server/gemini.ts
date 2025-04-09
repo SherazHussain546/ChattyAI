@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// Define model names - these might need updating as the API evolves
+// Define the official model names from Google AI Studio
 const MODELS = {
-  // Only use models confirmed to work with the API
+  // Standard Google AI Studio models that are guaranteed to work
   text: "gemini-pro",
   vision: "gemini-pro-vision",
-  // Exact same fallbacks for safety
+  // Same as primary models since these are the standard ones
   textFallback: "gemini-pro",  
   visionFallback: "gemini-pro-vision"
 };
@@ -84,9 +84,9 @@ export async function getImageChatResponse(message: string, imageBase64: string)
 
     console.log("Preparing to analyze image with Gemini Vision...");
     
-    // Get the vision model - use gemini-pro which also supports images
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    console.log("Using Gemini model with image support: gemini-pro");
+    // Get the vision model - use gemini-pro-vision for image analysis
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    console.log("Using Gemini model with image support: gemini-pro-vision");
     
     // Clean the base64 data if it has a data URL prefix
     let cleanedBase64 = imageBase64;

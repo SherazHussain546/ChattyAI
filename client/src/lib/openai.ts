@@ -84,22 +84,29 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
 // Process image-based messages and get AI response
 export async function getImageChatResponse(message: string, imageBase64: string): Promise<string> {
   try {
-    // Try both current and fallback models for vision
-    let model;
-    try {
-      // First try the latest vision model
-      model = genAI.getGenerativeModel({ model: MODELS.vision });
-      console.log("Using latest Gemini vision model:", MODELS.vision);
-    } catch (e) {
-      // Fall back to standard vision model if latest isn't available
-      model = genAI.getGenerativeModel({ model: MODELS.visionFallback });
-      console.log("Falling back to standard Gemini vision model:", MODELS.visionFallback);
-    }
+    // Use the standard gemini-pro-vision model that's guaranteed to work with Google AI Studio
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-pro-vision",
+      generationConfig: {
+        temperature: 0.4,
+        topK: 32,
+        topP: 0.8,
+        maxOutputTokens: 1024,
+      }
+    });
+    console.log("Using Google AI Studio vision model: gemini-pro-vision");
     
     // Prepare content parts with both text and image
+    // Make sure we properly handle the base64 data with or without data URL prefix
+    let cleanedBase64 = imageBase64;
+    if (imageBase64.startsWith('data:')) {
+      cleanedBase64 = imageBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+      console.log("Cleaned image data URL format");
+    }
+    
     const imagePart = {
       inlineData: {
-        data: imageBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, ""),
+        data: cleanedBase64,
         mimeType: "image/jpeg",
       },
     };
