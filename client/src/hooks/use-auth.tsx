@@ -40,19 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // Show the Firebase setup instructions to help configure domains
-      const shouldProceed = window.confirm(
-        "To use Google Sign-In, you need to add this domain to your Firebase project's authorized domains. " +
-        "Would you like to continue with Google Sign-In anyway? (Cancel to use Guest login instead)"
-      );
+      // Proceed directly with Google sign-in - no confirmation needed
+      console.log("Attempting Google Sign-In...");
       
-      if (!shouldProceed) {
-        console.log("User canceled Google Sign-In, switching to guest login");
-        await signInAsGuest();
-        return user;
-      }
+      // Add additional scopes if needed
+      googleProvider.addScope('profile');
+      googleProvider.addScope('email');
       
+      // Use signInWithPopup for better user experience
       const result = await signInWithPopup(auth, googleProvider);
+      console.log("Google Sign-In successful:", result.user.displayName);
+      
+      // Load chat history for the signed-in user
       await loadChatHistory(result.user.uid);
       return result.user;
     } catch (error) {
@@ -62,14 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // @ts-ignore - Firebase error type with code property
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/unauthorized-domain') {
         // Fallback to guest login when domain is not authorized
-        console.warn("Firebase domain not authorized. Falling back to guest login.");
+        console.warn("Firebase domain not authorized. Showing domain instructions.");
         
         // Show a helpful error message specific to the current domain
         const currentDomain = window.location.hostname;
         
+        // Create a more specific error message with domain information
+        let errorMessage = `Domain "${currentDomain}" is not authorized in Firebase.`;
+        
         // Specific instructions for luxethread.ie
         if (currentDomain.includes('luxethread.ie')) {
-          alert(
+          errorMessage = 
             `Firebase Authentication Error: Domain "${currentDomain}" is not authorized in your Firebase project.\n\n` +
             `Please add these domains to your Firebase project:\n` +
             `- ${currentDomain}\n` +
@@ -77,24 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             `Steps:\n` +
             `1. Go to Firebase Console > Authentication > Settings\n` +
             `2. Add the domains under "Authorized domains"\n\n` +
-            `Continuing as a guest user for now.`
-          );
+            `Please try again after adding these domains.`;
         } else {
-          // General message for other domains
-          alert(
-            "Firebase Authentication Error: This domain is not authorized in your Firebase project. " +
-            "Use the 'Firebase Setup Instructions' button on the login page for help configuring your Firebase project. " +
-            "Continuing as a guest user instead."
-          );
+          // General message for other domains (Replit, local, etc.)
+          errorMessage = 
+            `Firebase Authentication Error: Domain "${currentDomain}" is not authorized.\n\n` +
+            `Please add this domain to your Firebase project's authorized domains list:\n` +
+            `- ${currentDomain}\n\n` +
+            `Click the "Domain Setup Help" button on the login page for detailed instructions.`;
         }
         
-        await signInAsGuest();
-        return user;
+        // Throw a new error with the detailed message
+        throw new Error(errorMessage);
       } else {
-        // For other errors, show the error and fall back to guest login
-        alert(`Authentication Error: ${error instanceof Error ? error.message : 'Unknown error'}. Continuing as guest.`);
-        await signInAsGuest();
-        return user;
+        // For other errors, re-throw with a more user-friendly message
+        const errorMessage = error instanceof Error ? error.message : 'Unknown authentication error occurred';
+        throw new Error(`Google Sign-In failed: ${errorMessage}`);
       }
     }
   };

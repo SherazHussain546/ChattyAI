@@ -16,7 +16,7 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: import.meta.env.FIREBASE_MESSAGING_SENDER_ID,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
@@ -34,23 +34,41 @@ googleProvider.setCustomParameters({
 export function displayFirebaseSetupInstructions() {
   // Get the current domain for the instructions
   const currentDomain = window.location.hostname;
+  const isLuxeThread = currentDomain.includes('luxethread.ie');
   
-  alert(`
-Firebase Authentication Domain Setup Instructions:
+  // Create an improved, more specific message based on the domain
+  const message = `
+📋 Firebase Authentication Domain Setup Instructions 📋
+
+${isLuxeThread 
+    ? '🔒 IMPORTANT: luxethread.ie Domain Setup Required 🔒'  
+    : '🔒 Domain Authorization Required 🔒'
+}
 
 To fix the unauthorized domain error:
 
-1. Go to Firebase Console (console.firebase.google.com)
-2. Select your project
-3. Go to "Authentication" section
-4. Click on "Settings" tab
-5. Under "Authorized domains", add your domain: ${currentDomain}
+1. Go to Firebase Console (https://console.firebase.google.com)
+2. Select your project: "${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'your project'}"
+3. Go to "Authentication" section in the left sidebar
+4. Click on the "Settings" tab
+5. Scroll down to "Authorized domains" section
+6. Click "Add domain" and add: ${currentDomain}
 
-Additional domains to add if needed:
-- Your Replit domain (if applicable)
-- luxethread.ie
-- www.luxethread.ie
-  `);
+${isLuxeThread 
+    ? `For luxethread.ie, also add these additional domains:
+   - www.luxethread.ie
+   - app.luxethread.ie (if you plan to use this subdomain)` 
+    : `If using multiple environments, also consider adding:
+   - Your Replit domain (if applicable)
+   - Your production domain (if different from current)`
+}
+
+After adding the domain(s), return to this page and try Google Sign-in again.
+
+Need more help? Visit: https://firebase.google.com/docs/auth/web/google-signin
+`;
+
+  alert(message);
 }
 
 export { app, auth, db, googleProvider };
