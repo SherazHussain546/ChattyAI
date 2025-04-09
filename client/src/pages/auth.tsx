@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { displayFirebaseSetupInstructions } from '@/lib/firebase';
 
 type AuthFormData = {
   email: string;
@@ -110,6 +111,18 @@ export default function AuthPage() {
           <OAuthButtons setAuthError={setAuthError} />
           
           <GuestLoginButton setAuthError={setAuthError} />
+          
+          <div className="flex justify-center mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs flex items-center gap-1 text-muted-foreground"
+              onClick={() => displayFirebaseSetupInstructions()}
+            >
+              <HelpCircle className="w-3 h-3" />
+              Firebase Setup Instructions
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -2,10 +2,10 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 
 // Define model names - these might need updating as the API evolves
 const MODELS = {
-  // Start with safer, known-to-exist models
+  // Only use models confirmed to work with the API
   text: "gemini-pro",
   vision: "gemini-pro-vision",
-  // Fallbacks if the primary models don't work
+  // Exact same fallbacks for safety
   textFallback: "gemini-pro",  
   visionFallback: "gemini-pro-vision"
 };
@@ -82,32 +82,36 @@ export async function getImageChatResponse(message: string, imageBase64: string)
       return "I'm sorry, but I'm unable to process requests at the moment. The AI service is not properly configured.";
     }
 
-    // Try both current and fallback models for vision
-    let model;
-    try {
-      // First try the latest vision model
-      model = genAI.getGenerativeModel({ model: MODELS.vision });
-      console.log("Using latest Gemini vision model:", MODELS.vision);
-    } catch (e) {
-      // Fall back to standard vision model if latest isn't available
-      model = genAI.getGenerativeModel({ model: MODELS.visionFallback });
-      console.log("Falling back to standard Gemini vision model:", MODELS.visionFallback);
-    }
+    console.log("Preparing to analyze image with Gemini Vision...");
     
-    // Create image parts from the base64 image
-    const imageParts = [{
+    // Get the vision model
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    console.log("Using Gemini vision model: gemini-pro-vision");
+    
+    // Clean the base64 data if it has a data URL prefix
+    let cleanedBase64 = imageBase64;
+    if (imageBase64.includes('base64,')) {
+      cleanedBase64 = imageBase64.split('base64,')[1];
+      console.log("Cleaned base64 data from data URL format");
+    }
+
+    // Create parts for the content generation request
+    const imagePart = {
       inlineData: {
-        data: imageBase64,
-        mimeType: "image/jpeg",
-      },
-    }];
+        data: cleanedBase64,
+        mimeType: "image/jpeg"
+      }
+    };
 
     // Create text prompt
     const textPart = { text: message || "What do you see in this image? Provide a detailed description." };
+    console.log("Using prompt:", textPart.text);
     
     // Generate content with both image and text
-    const result = await model.generateContent([textPart, ...imageParts]);
+    console.log("Sending request to Gemini Vision API...");
+    const result = await model.generateContent([textPart, imagePart]);
     const response = result.response;
+    console.log("Received response from Gemini Vision API");
     return response.text();
   } catch (error) {
     console.error("Error getting image chat response from Gemini:", error);

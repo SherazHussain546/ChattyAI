@@ -1,7 +1,15 @@
 
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+
+// Firebase Configuration 
+// To fix the auth/unauthorized-domain error:
+// 1. Go to Firebase Console: https://console.firebase.google.com/
+// 2. Select your project
+// 3. Go to "Authentication" section
+// 4. Click on "Settings" tab
+// 5. Under "Authorized domains", add your Replit domain (*.replit.dev or the custom domain you use)
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,5 +24,29 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
+
+// Add login hint parameter to make login faster
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+// Function to display Firebase domain setup instructions
+export function displayFirebaseSetupInstructions() {
+  alert(`
+Firebase Authentication Domain Setup Instructions:
+
+To fix the unauthorized domain error:
+
+1. Go to Firebase Console (console.firebase.google.com)
+2. Select your project
+3. Go to "Authentication" section
+4. Click on "Settings" tab
+5. Under "Authorized domains", add your Replit domain
+
+For example:
+- yourreplname.user-name.repl.co 
+- Or your custom domain if you have one
+  `);
+}
 
 export { app, auth, db, googleProvider };
