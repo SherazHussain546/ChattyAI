@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem,
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { User, LogOut, History, Settings, Moon, Sun, MessageSquare, Loader2 } from 'lucide-react';
+import { User, LogOut, History, Settings, Moon, Sun, MessageSquare, Loader2, PlusCircle } from 'lucide-react';
 import type { ChatMessage, UserPreferences } from '@/lib/types';
 
 export default function Home() {
@@ -293,13 +293,22 @@ export default function Home() {
             onClick={async () => {
               // Clear messages for a new chat
               try {
+                // First, clear the local query cache to ensure we get fresh data
+                queryClient.setQueryData(['/api/messages'], []);
+                queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+                
+                // Then call the API to clear the server-side data
                 await apiRequest('POST', '/api/messages/clear');
+                
                 toast({
                   description: "Started a new chat",
                 });
-                // Refresh messages to show empty chat
+                
+                // Immediately refetch messages to show empty chat
                 await refetchMessages();
                 setActiveTab("chat");
+                
+                console.log('Messages cleared, data refreshed');
               } catch (error) {
                 console.error("Failed to clear chat:", error);
                 toast({
@@ -421,6 +430,41 @@ export default function Home() {
                 ChattyAI
               </h2>
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1 mr-2" 
+                  onClick={async () => {
+                    // Clear messages for a new chat - reusing same logic as sidebar button
+                    try {
+                      // First, clear the local query cache to ensure we get fresh data
+                      queryClient.setQueryData(['/api/messages'], []);
+                      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+                      
+                      // Then call the API to clear the server-side data
+                      await apiRequest('POST', '/api/messages/clear');
+                      
+                      toast({
+                        description: "Started a new chat",
+                      });
+                      
+                      // Immediately refetch messages to show empty chat
+                      await refetchMessages();
+                      
+                      console.log('Messages cleared, data refreshed (header button)');
+                    } catch (error) {
+                      console.error("Failed to clear chat:", error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to start a new chat",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  <span>New Chat</span>
+                </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 

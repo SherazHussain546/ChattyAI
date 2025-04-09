@@ -12,8 +12,13 @@ import { UserPreferences, InsertUserPreferences } from "@shared/schema";
 const messageStore: Record<string, ChatMessage[]> = {};
 const getLocalMessages = (userId: string): ChatMessage[] => messageStore[userId] || [];
 const clearLocalMessages = (userId: string): void => {
+  console.log(`Attempting to clear messages for user ${userId}. Current count: ${messageStore[userId]?.length || 0}`);
+  
+  // Ensure we reset to an empty array, not null or undefined
   messageStore[userId] = [];
-  console.log(`Cleared messages for user ${userId}`);
+  
+  // Verify that the messages were cleared
+  console.log(`Cleared messages for user ${userId}. New count: ${messageStore[userId]?.length || 0}`);
 };
 const addLocalMessage = (message: Omit<ChatMessage, "id" | "timestamp">): ChatMessage => {
   const userId = message.userId;
