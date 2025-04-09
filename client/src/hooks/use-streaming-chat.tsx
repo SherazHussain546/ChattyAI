@@ -133,6 +133,7 @@ export function useStreamingChat() {
       
       // Set up event handlers for server-sent events
       eventSource.onmessage = (event) => {
+        console.log('Received SSE message:', event.data);
         try {
           const data = JSON.parse(event.data) as StreamingEvent;
           

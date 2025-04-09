@@ -157,7 +157,12 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
     }
   } catch (error) {
     console.error("Error getting chat response from Gemini:", error);
-    throw new Error("Failed to get response from AI");
+    console.error("Full error details:", {
+      error,
+      stack: error instanceof Error ? error.stack : undefined,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    throw new Error(`Failed to get response from AI: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
