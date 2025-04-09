@@ -95,8 +95,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await firebaseSignOut(auth);
+      // Clear user data first
+      setUser(null);
       setChatHistory([]);
+      
+      // Then sign out of Firebase if needed
+      if (auth.currentUser) {
+        await firebaseSignOut(auth);
+      }
+      
+      console.log("User signed out successfully");
+      // Don't navigate here - navigation should be handled by the component that calls signOut
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;

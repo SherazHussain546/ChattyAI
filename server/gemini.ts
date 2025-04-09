@@ -4,10 +4,11 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 const MODELS = {
   // Standard Google AI Studio models that are guaranteed to work
   text: "gemini-pro",
-  vision: "gemini-pro-vision",
+  // Use text model for both text and images
+  vision: "gemini-pro",  
   // Same as primary models since these are the standard ones
   textFallback: "gemini-pro",  
-  visionFallback: "gemini-pro-vision"
+  visionFallback: "gemini-pro"
 };
 
 // Initialize the Gemini API
@@ -84,8 +85,17 @@ export async function getImageChatResponse(message: string, imageBase64: string)
 
     console.log("Preparing to analyze image with Gemini Vision...");
     
-    // For Google AI Studio, only gemini-pro model supports both text and images
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Do *not* attempt to use gemini-1.5-pro-vision (not available on many accounts)
+    // Instead, use only gemini-pro - the model that definitely works for most accounts
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-pro",
+      generationConfig: {
+        temperature: 0.4,
+        topK: 32,
+        topP: 0.8,
+        maxOutputTokens: 1024,
+      }
+    });
     console.log("Using Gemini model with image support: gemini-pro");
     
     // Clean the base64 data if it has a data URL prefix
@@ -107,12 +117,36 @@ export async function getImageChatResponse(message: string, imageBase64: string)
     const textPart = { text: message || "What do you see in this image? Provide a detailed description." };
     console.log("Using prompt:", textPart.text);
     
-    // Generate content with both image and text
-    console.log("Sending request to Gemini Vision API...");
-    const result = await model.generateContent([textPart, imagePart]);
-    const response = result.response;
-    console.log("Received response from Gemini Vision API");
-    return response.text();
+    // Generate content with both image and text - use format compatible with Google AI Studio
+    console.log("Sending request to Gemini API...");
+    try {
+      // First try the simple content array approach
+      const result = await model.generateContent([textPart, imagePart]);
+      const response = result.response;
+      console.log("Received response from Gemini API");
+      return response.text();
+    } catch (error) {
+      console.log("Failed with first approach, trying alternate format...", error);
+      
+      // If that fails, try the alternate format with contents array
+      const result = await model.generateContent({
+        contents: [{ 
+          role: "user", 
+          parts: [
+            { text: message || "What do you see in this image?" },
+            { 
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: cleanedBase64
+              }
+            }
+          ] 
+        }]
+      });
+      const response = result.response;
+      console.log("Received response from Gemini API using alternate format");
+      return response.text();
+    }
   } catch (error) {
     console.error("Error getting image chat response from Gemini:", error);
     throw new Error("Failed to get image analysis from AI");
