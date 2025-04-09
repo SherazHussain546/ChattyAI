@@ -754,6 +754,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Screen capture analysis endpoint
+  app.post("/api/analyze-screen", async (req, res) => {
+    // Skip authentication temporarily for testing
+    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+    
+    try {
+      const { image_data } = req.body;
+      
+      if (!image_data) {
+        return res.status(400).json({ success: false, message: 'No image data provided' });
+      }
+      
+      console.log("Processing screen capture for analysis...");
+      
+      // Extract base64 data if needed
+      const base64Data = image_data.includes('base64,') 
+        ? image_data.split('base64,')[1] 
+        : image_data;
+      
+      // Get AI analysis using Gemini Vision
+      const analysis = await getImageChatResponse(
+        "Please analyze this screenshot and tell me what's happening on the screen. If you see text content, code, or data, please describe that in detail. Also, if you can identify any potential issues or opportunities for improvement based on what's visible, please mention them.", 
+        base64Data
+      );
+      
+      // Create a descriptive response based on the image
+      res.json({ 
+        success: true,
+        analysis,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Error analyzing screen capture:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to analyze screen capture', 
+        error: String(error) 
+      });
+    }
+  });
+  
   // Add a console log to help with debugging
   console.log("API is configured with Gemini API - text chat should be working");
   try {

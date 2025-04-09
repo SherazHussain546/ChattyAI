@@ -4,6 +4,7 @@ import { useLocation } from 'wouter';
 import { Avatar } from '@/components/Avatar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { VoiceControls } from '@/components/VoiceControls';
+import { ScreenStreamCapture } from '@/components/ScreenStreamCapture';
 import { speechHandler } from '@/lib/speechUtils';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
@@ -24,8 +25,10 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isCapturingScreen, setIsCapturingScreen] = useState(false);
+  const [isScreenStreaming, setIsScreenStreaming] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [useStreamingResponse, setUseStreamingResponse] = useState(false);
+  const [screenAnalysis, setScreenAnalysis] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const [_, navigate] = useLocation();
@@ -561,12 +564,33 @@ export default function Home() {
               </div>
             </div>
             
-            {/* The floating avatar indicator */}
+            {/* The floating avatar and controls indicator */}
             <div className="fixed top-2 right-2 z-10">
               <div className="flex items-center gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-full border shadow-sm">
-                {isSpeaking && (
-                  <span className="animate-pulse w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                {/* Screen streaming indicator */}
+                {isScreenStreaming && (
+                  <span className="animate-pulse w-2 h-2 rounded-full bg-red-500 mr-1" title="Screen streaming active"></span>
                 )}
+                
+                {/* Speaking indicator */}
+                {isSpeaking && (
+                  <span className="animate-pulse w-2 h-2 rounded-full bg-green-500 mr-1" title="AI speaking"></span>
+                )}
+                
+                {/* Screen streaming control */}
+                <ScreenStreamCapture 
+                  onAnalysisResult={(result) => {
+                    setScreenAnalysis(result);
+                    if (result) {
+                      // If we get new screen analysis, ask the AI about it
+                      handleSendMessage(`Can you analyze what's on my screen and help me with it? Here's what's detected: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
+                    }
+                  }}
+                  enabled={isScreenStreaming}
+                  onToggle={setIsScreenStreaming}
+                />
+                
+                {/* Voice controls */}
                 <VoiceControls
                   isListening={isListening}
                   voiceEnabled={!!preferences?.voiceEnabled}
@@ -732,6 +756,17 @@ export default function Home() {
                       <Switch 
                         checked={useStreamingResponse}
                         onCheckedChange={setUseStreamingResponse}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Screen Stream Analysis</h3>
+                        <p className="text-sm text-muted-foreground">Enable AI to analyze your screen content in real-time</p>
+                      </div>
+                      <Switch 
+                        checked={isScreenStreaming}
+                        onCheckedChange={setIsScreenStreaming}
                       />
                     </div>
                   </CardContent>
