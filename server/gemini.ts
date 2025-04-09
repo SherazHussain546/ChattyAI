@@ -1,15 +1,47 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// Define the official model names from Google AI Studio (as of April 2023)
+// Define the official model names from Google AI Studio (as of April 2025)
+// Note: The model names change periodically as Google updates the API
 const MODELS = {
-  // The standard model that works reliably
-  text: "gemini-pro",
-  // For vision tasks, only gemini-pro currently supports both text and images consistently
-  vision: "gemini-pro",  
-  // Fallbacks that are guaranteed to be available
-  textFallback: "gemini-pro",  
-  visionFallback: "gemini-pro"
+  // Using the models that are actually available in the API (from the model list)
+  text: "models/gemini-1.5-pro-latest",
+  // Vision model for image analysis
+  vision: "models/gemini-1.0-pro-vision-latest",  
+  // Fallbacks to older versions if needed
+  textFallback: "models/gemini-1.5-flash-latest",  
+  visionFallback: "models/gemini-pro-vision"
 };
+
+// Let's add a function to list available models
+async function listAvailableModels() {
+  try {
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY || '',
+        },
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Available Gemini models:');
+      data.models.forEach((model: any) => {
+        console.log(`- ${model.name} (${model.displayName})`);
+      });
+    } else {
+      console.error('Error listing models:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Error fetching available models:', error);
+  }
+}
+
+// List models on startup
+listAvailableModels();
 
 // Initialize the Gemini API
 // Note: Make sure GEMINI_API_KEY is properly set
@@ -85,18 +117,32 @@ export async function getImageChatResponse(message: string, imageBase64: string)
 
     console.log("Preparing to analyze image with Gemini Vision...");
     
-    // Do *not* attempt to use gemini-1.5-pro-vision (not available on many accounts)
-    // Instead, use only gemini-pro - the model that definitely works for most accounts
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro",
-      generationConfig: {
-        temperature: 0.4,
-        topK: 32,
-        topP: 0.8,
-        maxOutputTokens: 1024,
-      }
-    });
-    console.log("Using Gemini model with image support: gemini-pro");
+    // Try both main and fallback vision models
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.vision,
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 0.8,
+          maxOutputTokens: 1024,
+        }
+      });
+      console.log("Using Gemini vision model:", MODELS.vision);
+    } catch (e) {
+      // Fall back to standard model if the vision model isn't available
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.visionFallback,
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 0.8,
+          maxOutputTokens: 1024,
+        }
+      });
+      console.log("Falling back to standard vision model:", MODELS.visionFallback);
+    }
     
     // Clean the base64 data if it has a data URL prefix
     let cleanedBase64 = imageBase64;

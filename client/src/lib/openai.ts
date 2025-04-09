@@ -1,13 +1,14 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 // Define model names - these might need updating as the API evolves
+// Updated for April 2025 API versions based on available models
 const MODELS = {
-  // Updated for compatibility with current available models
-  text: "gemini-pro",       // Use a known working text model
-  vision: "gemini-pro",     // Use a model that supports both text and images
-  // Fallbacks to older versions if needed
-  textFallback: "gemini-pro",  
-  visionFallback: "gemini-pro"
+  // Updated model names for compatibility with current available models
+  text: "models/gemini-1.5-pro-latest",         // Use the latest Pro model
+  vision: "models/gemini-1.0-pro-vision-latest", // Use the dedicated vision model
+  // Fallbacks to alternate versions
+  textFallback: "models/gemini-1.5-flash-latest",  
+  visionFallback: "models/gemini-pro-vision"
 };
 
 // Initialize Gemini client
@@ -104,18 +105,33 @@ export async function getImageChatResponse(message: string, imageBase64: string)
       return "I'm sorry, but I'm unable to analyze images at the moment. The AI service is not properly configured. Please make sure to add a valid Gemini API key.";
     }
     
-    // Use the gemini-pro model which is documented to work with multimodal content
-    // This is the most reliable approach for Google AI Studio
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro", 
-      generationConfig: {
-        temperature: 0.4,  // Lower temperature for more accurate image descriptions
-        topK: 32,
-        topP: 0.8,
-        maxOutputTokens: 2048,  // Increased for more detailed image descriptions
-      }
-    });
-    console.log("Using Google AI Studio model with vision support: gemini-pro");
+    // Try both main and fallback vision models
+    let model;
+    try {
+      // First try the latest vision model
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.vision,
+        generationConfig: {
+          temperature: 0.4,  // Lower temperature for more accurate image descriptions
+          topK: 32,
+          topP: 0.8,
+          maxOutputTokens: 2048,  // Increased for more detailed image descriptions
+        }
+      });
+      console.log("Using latest Gemini vision model:", MODELS.vision);
+    } catch (e) {
+      // Fall back to standard model if the vision model isn't available
+      model = genAI.getGenerativeModel({ 
+        model: MODELS.visionFallback,
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 0.8,
+          maxOutputTokens: 1024,
+        }
+      });
+      console.log("Falling back to standard vision model:", MODELS.visionFallback);
+    }
     
     // Prepare content parts with both text and image
     // Make sure we properly handle the base64 data with or without data URL prefix

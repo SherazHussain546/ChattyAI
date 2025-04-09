@@ -64,12 +64,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Fallback to guest login when domain is not authorized
         console.warn("Firebase domain not authorized. Falling back to guest login.");
         
-        // Show a helpful error message
-        alert(
-          "Firebase Authentication Error: This domain is not authorized in your Firebase project. " +
-          "Use the 'Firebase Setup Instructions' button on the login page for help configuring your Firebase project. " +
-          "Continuing as a guest user instead."
-        );
+        // Show a helpful error message specific to the current domain
+        const currentDomain = window.location.hostname;
+        
+        // Specific instructions for luxethread.ie
+        if (currentDomain.includes('luxethread.ie')) {
+          alert(
+            `Firebase Authentication Error: Domain "${currentDomain}" is not authorized in your Firebase project.\n\n` +
+            `Please add these domains to your Firebase project:\n` +
+            `- ${currentDomain}\n` +
+            `- www.luxethread.ie\n\n` +
+            `Steps:\n` +
+            `1. Go to Firebase Console > Authentication > Settings\n` +
+            `2. Add the domains under "Authorized domains"\n\n` +
+            `Continuing as a guest user for now.`
+          );
+        } else {
+          // General message for other domains
+          alert(
+            "Firebase Authentication Error: This domain is not authorized in your Firebase project. " +
+            "Use the 'Firebase Setup Instructions' button on the login page for help configuring your Firebase project. " +
+            "Continuing as a guest user instead."
+          );
+        }
         
         await signInAsGuest();
         return user;
@@ -114,9 +131,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadChatHistory = async (userId: string) => {
     try {
+      // Detect if we're on a custom domain like luxethread.ie
+      const isCustomDomain = window.location.hostname.includes('luxethread.ie');
+      
+      // Determine the base URL for API requests
+      const apiBasePath = isCustomDomain 
+        ? import.meta.env.VITE_API_BASE_URL || '' // Use env variable if available
+        : ''; // Use relative path for local/Replit deployment
+
+      // Build the full URL for messages API
+      const url = `${apiBasePath}/api/messages`;
+      
+      console.log(`Loading chat history from: ${url}`);
+      
       // For now, use our local in-memory API instead of Firestore
       // to avoid permission issues
-      const response = await fetch('/api/messages');
+      const response = await fetch(url);
       if (response.ok) {
         const messages = await response.json();
         setChatHistory(messages);

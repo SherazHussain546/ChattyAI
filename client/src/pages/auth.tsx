@@ -117,10 +117,30 @@ export default function AuthPage() {
               variant="outline" 
               size="sm" 
               className="text-xs flex items-center gap-1 text-muted-foreground"
-              onClick={() => displayFirebaseSetupInstructions()}
+              onClick={() => {
+                // Get current domain for specific instructions
+                const currentDomain = window.location.hostname;
+                
+                // Show domain-specific instructions
+                alert(`
+Firebase Authentication Domain Setup Instructions:
+
+Please add the following domain(s) to your Firebase project:
+- ${currentDomain}${currentDomain.includes('luxethread.ie') ? '\n- www.luxethread.ie' : ''}
+
+Steps:
+1. Go to Firebase Console: https://console.firebase.google.com/
+2. Select your project
+3. Go to Authentication > Settings
+4. Under "Authorized domains", add the domain(s) listed above
+5. Click "Save"
+
+This will allow Google Sign-In to work properly on this domain.
+                `);
+              }}
             >
               <HelpCircle className="w-3 h-3" />
-              Firebase Setup Instructions
+              Domain Setup Help
             </Button>
           </div>
         </div>

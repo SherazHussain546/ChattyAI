@@ -30,6 +30,20 @@ export async function apiRequest(
   data?: any,
   options: RequestInit = {}
 ): Promise<Response> {
+  // Detect if we're on a custom domain like luxethread.ie
+  const isCustomDomain = window.location.hostname.includes('luxethread.ie');
+  
+  // Determine the base URL for API requests
+  // In production on a custom domain, we might need to point to the actual API server
+  const apiBasePath = isCustomDomain 
+    ? import.meta.env.VITE_API_BASE_URL || '' // Use env variable if available
+    : ''; // Use relative path for local/Replit deployment
+
+  // Build the full URL
+  const url = `${apiBasePath}${path}`;
+  
+  console.log(`Making API request to: ${url}`);
+  
   const opts: RequestInit = {
     method,
     headers: {
@@ -44,7 +58,7 @@ export async function apiRequest(
     opts.body = JSON.stringify(data);
   }
 
-  const res = await fetch(path, opts);
+  const res = await fetch(url, opts);
   return throwIfResNotOk(res);
 }
 

@@ -32,6 +32,9 @@ googleProvider.setCustomParameters({
 
 // Function to display Firebase domain setup instructions
 export function displayFirebaseSetupInstructions() {
+  // Get the current domain for the instructions
+  const currentDomain = window.location.hostname;
+  
   alert(`
 Firebase Authentication Domain Setup Instructions:
 
@@ -41,11 +44,12 @@ To fix the unauthorized domain error:
 2. Select your project
 3. Go to "Authentication" section
 4. Click on "Settings" tab
-5. Under "Authorized domains", add your Replit domain
+5. Under "Authorized domains", add your domain: ${currentDomain}
 
-For example:
-- yourreplname.user-name.repl.co 
-- Or your custom domain if you have one
+Additional domains to add if needed:
+- Your Replit domain (if applicable)
+- luxethread.ie
+- www.luxethread.ie
   `);
 }
 
