@@ -41,7 +41,13 @@ let adminApp;
 try {
   if (adminConfig) {
     adminApp = admin.initializeApp({
-      credential: admin.credential.cert(adminConfig)
+      credential: admin.credential.cert(adminConfig),
+      projectId: process.env.FIREBASE_PROJECT_ID // Explicitly set project ID
+    });
+  } else if (process.env.FIREBASE_PROJECT_ID) {
+    // Use project ID from environment variable
+    adminApp = admin.initializeApp({
+      projectId: process.env.FIREBASE_PROJECT_ID
     });
   } else {
     // Use default application credentials
