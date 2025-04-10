@@ -234,8 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use a default user ID for testing if not authenticated
       const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
       
-      // Get messages from local storage
-      const messages = getLocalMessages(userId);
+      // Get messages from storage service
+      const messages = await storage.getMessages(userId);
       res.json(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -415,16 +415,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Clear messages for a new chat
+  // Clear messages for a new chat (create new session)
   app.post("/api/messages/clear", async (req, res) => {
     try {
       // Use a default user ID for testing if not authenticated
       const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
       
-      // Clear all messages for this user
-      clearLocalMessages(userId);
+      // Create a new chat session (which effectively clears messages)
+      const newSession = await storage.createChatSession(userId, "New Chat");
       
-      res.json({ success: true, message: "Chat history cleared" });
+      res.json({ 
+        success: true, 
+        message: "New chat session created", 
+        sessionId: newSession.id 
+      });
     } catch (error) {
       console.error('Error clearing messages:', error);
       res.status(500).json({ success: false, message: 'Failed to clear chat history' });
@@ -437,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
     
     try {
-      const prefs = getLocalPreferences(userId);
+      const prefs = await storage.getPreferences(userId);
       res.json(prefs);
     } catch (error) {
       console.error('Error fetching preferences:', error);
@@ -452,11 +456,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const prefsData = insertPreferencesSchema.parse(req.body);
-      const updatedPrefs = updateLocalPreferences(userId, prefsData);
+      const updatedPrefs = await storage.updatePreferences(userId, prefsData);
       res.json(updatedPrefs);
     } catch (error) {
       console.error('Error updating preferences:', error);
       res.status(500).json({ message: 'Failed to update preferences' });
+    }
+  });
+  
+  // Chat Sessions API endpoints
+  
+  // Get all chat sessions for current user
+  app.get("/api/chat-sessions", async (req, res) => {
+    try {
+      // Skip authentication temporarily for testing
+      const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+      
+      // Get chat sessions from storage
+      const sessions = await storage.getChatSessions(userId);
+      
+      // Format response
+      const formattedSessions = sessions.map(session => ({
+        id: session.id,
+        title: session.title,
+        created_at: session.createdAt.toISOString(),
+        updated_at: session.updatedAt.toISOString(),
+        message_count: session.messageCount,
+        last_message: session.lastMessage || 'Empty chat'
+      }));
+      
+      res.json(formattedSessions);
+    } catch (error) {
+      console.error('Error fetching chat sessions:', error);
+      res.status(500).json({ message: 'Failed to fetch chat sessions' });
+    }
+  });
+  
+  // Get messages for a specific chat session
+  app.get("/api/chat-sessions/:sessionId", async (req, res) => {
+    try {
+      // Skip authentication temporarily for testing
+      const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+      const { sessionId } = req.params;
+      
+      // Get messages for this session
+      const messages = await storage.getMessages(userId, sessionId);
+      
+      // Set as active session
+      await storage.setActiveChatSessionId(userId, sessionId);
+      
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching chat session messages:', error);
+      res.status(500).json({ message: 'Failed to fetch chat session messages' });
+    }
+  });
+  
+  // Create a new chat session
+  app.post("/api/chat-sessions", async (req, res) => {
+    try {
+      // Skip authentication temporarily for testing
+      const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
+      const { title } = req.body;
+      
+      // Create a new session
+      const newSession = await storage.createChatSession(userId, title || "New Chat");
+      
+      // Format response
+      const formattedSession = {
+        id: newSession.id,
+        title: newSession.title,
+        created_at: newSession.createdAt.toISOString(),
+        updated_at: newSession.updatedAt.toISOString(),
+        message_count: newSession.messageCount,
+        last_message: newSession.lastMessage || 'Empty chat'
+      };
+      
+      res.status(201).json(formattedSession);
+    } catch (error) {
+      console.error('Error creating chat session:', error);
+      res.status(500).json({ message: 'Failed to create chat session' });
+    }
+  });
+  
+  // Update chat session title
+  app.patch("/api/chat-sessions/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { title } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ message: 'Title is required' });
+      }
+      
+      // Update the session
+      const updatedSession = await storage.setChatSessionTitle(sessionId, title);
+      
+      // Format response
+      const formattedSession = {
+        id: updatedSession.id,
+        title: updatedSession.title,
+        created_at: updatedSession.createdAt.toISOString(),
+        updated_at: updatedSession.updatedAt.toISOString(),
+        message_count: updatedSession.messageCount,
+        last_message: updatedSession.lastMessage || 'Empty chat'
+      };
+      
+      res.json(formattedSession);
+    } catch (error) {
+      console.error('Error updating chat session:', error);
+      res.status(500).json({ message: 'Failed to update chat session' });
+    }
+  });
+  
+  // Delete a chat session
+  app.delete("/api/chat-sessions/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      
+      // Delete the session
+      const result = await storage.deleteChatSession(sessionId);
+      
+      if (result) {
+        res.status(204).end();
+      } else {
+        res.status(404).json({ message: 'Chat session not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting chat session:', error);
+      res.status(500).json({ message: 'Failed to delete chat session' });
     }
   });
   
@@ -660,63 +788,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get chat sessions list
-  app.get("/api/chat-sessions", async (req, res) => {
-    // Skip authentication temporarily for testing
-    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
-    
-    try {
-      const sessions = getUserChatSessions(userId);
-      
-      // Format for client usage - only return essential data
-      const formattedSessions = sessions.map(session => ({
-        id: session.id,
-        title: session.title,
-        created_at: session.created_at,
-        updated_at: session.updated_at,
-        message_count: session.messages.length,
-        last_message: session.messages.length > 0 ? 
-          session.messages[session.messages.length - 1].content.substring(0, 30) + 
-          (session.messages[session.messages.length - 1].content.length > 30 ? '...' : '') : 
-          ''
-      }));
-      
-      res.json(formattedSessions);
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error);
-      res.status(500).json({ message: 'Failed to fetch chat sessions' });
-    }
-  });
-  
-  // Get messages for a specific chat session
-  app.get("/api/chat-sessions/:sessionId", async (req, res) => {
-    // Skip authentication temporarily for testing
-    const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
-    const { sessionId } = req.params;
-    
-    try {
-      const sessions = getUserChatSessions(userId);
-      const session = sessions.find(s => s.id === sessionId);
-      
-      if (!session) {
-        return res.status(404).json({ message: 'Chat session not found' });
-      }
-      
-      res.json(session.messages);
-    } catch (error) {
-      console.error('Error fetching session messages:', error);
-      res.status(500).json({ message: 'Failed to fetch session messages' });
-    }
-  });
-  
-  // Activate a specific chat session
+  // Activate a specific chat session (using storage implementation)
   app.post("/api/chat-sessions/:sessionId/activate", async (req, res) => {
     // Skip authentication temporarily for testing
     const userId = req.isAuthenticated() ? req.user.id : "test-user-123";
     const { sessionId } = req.params;
     
     try {
-      const sessions = getUserChatSessions(userId);
+      // Get the session to ensure it exists
+      const sessions = await storage.getChatSessions(userId);
       const session = sessions.find(s => s.id === sessionId);
       
       if (!session) {
@@ -724,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Set as active session
-      activeSessionStore[userId] = sessionId;
+      await storage.setActiveChatSessionId(userId, sessionId);
       
       res.json({ success: true, message: 'Chat session activated' });
     } catch (error) {
@@ -732,6 +812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to activate chat session' });
     }
   });
+  
+
   
   // File upload endpoint for document analysis
   app.post("/api/upload", async (req, res) => {
