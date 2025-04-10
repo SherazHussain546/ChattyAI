@@ -264,19 +264,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the message data
       const messageData = insertMessageSchema.parse({ content, role });
 
-      // Store user message locally
-      const userMessage = addLocalMessage({
+      // Get active chat session ID or create a new one
+      let activeChatId = await storage.getActiveChatSessionId(userId);
+      
+      if (!activeChatId) {
+        // Create a new chat session if none is active
+        const newSession = await storage.createChatSession(userId, "New Chat");
+        activeChatId = newSession.id;
+        await storage.setActiveChatSessionId(userId, activeChatId);
+      }
+      
+      // Store user message using storage implementation
+      const userMessage = await storage.addMessage({
         content: messageData.content,
         role: "user",
         userId: userId,
-        has_image: has_image || false
+        has_image: has_image || false,
+        chatId: activeChatId
       });
 
       // Choose appropriate AI handler based on whether there's an image
       let aiResponse: string;
       
-      // Get previous messages for context
-      const previousMessages = getLocalMessages(userId);
+      // Get previous messages for context from the current active chat session
+      const previousMessages = await storage.getMessages(userId, activeChatId);
       const history = previousMessages
         .filter(msg => msg.id !== userMessage.id) // Filter out the message we just added
         .map(msg => ({
@@ -389,12 +400,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`AI Response (first 50 chars): ${aiResponse.substring(0, 50)}...`);
 
-      // Store AI response locally
-      const aiMessage = addLocalMessage({
+      // Store AI response in the storage with the same active chat session
+      const aiMessage = await storage.addMessage({
         content: aiResponse,
         role: "assistant",
         userId: userId,
-        has_image: false
+        has_image: false,
+        chatId: activeChatId
       });
 
       // Get active session messages count
@@ -605,12 +617,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the message data
       const messageData = insertMessageSchema.parse({ content, role });
 
-      // Store user message locally
-      const userMessage = addLocalMessage({
+      // Get active chat session ID or create a new one
+      let activeChatId = await storage.getActiveChatSessionId(userId);
+      
+      if (!activeChatId) {
+        // Create a new chat session if none is active
+        const newSession = await storage.createChatSession(userId, "New Chat");
+        activeChatId = newSession.id;
+        await storage.setActiveChatSessionId(userId, activeChatId);
+      }
+      
+      // Store user message using storage implementation
+      const userMessage = await storage.addMessage({
         content: messageData.content,
         role: "user",
         userId: userId,
-        has_image: false
+        has_image: false,
+        chatId: activeChatId
       });
 
       // Set up SSE (Server-Sent Events)
@@ -625,11 +648,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.write(`data: ${JSON.stringify({ type: 'user-message', id: userMessage.id })}\n\n`);
       
       // Create a placeholder for the AI message to be updated later
-      const placeholderAiMessage = addLocalMessage({
+      const placeholderAiMessage = await storage.addMessage({
         content: "",  // Start with empty content
         role: "assistant",
         userId: userId,
-        has_image: false
+        has_image: false,
+        chatId: activeChatId
       });
       
       // Send the AI message ID back to the client so it can track updates
@@ -637,8 +661,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For very short messages, use non-streaming approach but simulate streaming
       if (content.trim().length < 5) {
-        // Get all previous messages for this user to maintain conversation context
-        const previousMessages = getLocalMessages(userId);
+        // Get all previous messages for this user from the current active chat session
+        const previousMessages = await storage.getMessages(userId, activeChatId);
         const history = previousMessages
           .filter(msg => msg.id !== userMessage.id) // Filter out the message we just added
           .map(({ content, role }) => ({ content, role }));
@@ -745,8 +769,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.end();
         }
       } else {
-        // Get streaming response generator
-        const streamingResponse = getStreamingChatResponse(messageData.content, getLocalMessages(userId));
+        // Get streaming response generator using messages from active chat session
+        const previousMessages = await storage.getMessages(userId, activeChatId);
+        const streamingResponse = getStreamingChatResponse(messageData.content, previousMessages);
         
         // Variable to accumulate the full response
         let fullResponse = "";
