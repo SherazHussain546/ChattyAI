@@ -8,7 +8,7 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { IStorage } from "./storage";
+import { IStorage, ChatSession } from "./storage";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -18,8 +18,12 @@ export class MemStorage implements IStorage {
   private usernameIndex: Map<string, string> = new Map();
   private messages: Map<string, ChatMessage[]> = new Map();
   private preferences: Map<string, UserPreferences> = new Map();
+  private chatSessions: Map<string, ChatSession[]> = new Map(); // userId -> sessions
+  private activeChatSessions: Map<string, string> = new Map(); // userId -> sessionId
+  private messagesByChat: Map<string, ChatMessage[]> = new Map(); // chatId -> messages
   private messageIdCounter: number = 1;
   private userIdCounter: number = 1;
+  private sessionIdCounter: number = 1;
 
   constructor() {
     this.sessionStore = new MemoryStore({
