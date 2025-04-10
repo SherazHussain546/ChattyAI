@@ -1,10 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all documents for now
-    // In production, you'd want to lock this down to authenticated users only
+    // Common function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Guest users have a specific prefix in their ID
+    function isGuestUser() {
+      return isAuthenticated() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    
+    // Users can read and update their own profile
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || resource.data.isPublic == true);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+    
+    // Chat messages - users can only access their own chats
+    match /chats/{chatId} {
+      allow read, create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Chat messages within a chat
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && get(/databases/$(database)/documents/chats/$(chatId)).data.userId == request.auth.uid;
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      }
+    }
+    
+    // User preferences
+    match /preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Public data that anyone can read
+    match /public/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && !isGuestUser();  // Only registered users can write to public data
+    }
+    
+    // System-wide settings (admin only)
+    match /system/{document=**} {
+      allow read: if true;  // Everyone can read system settings
+      allow write: if false; // No one can write via client (admin only via backend)
+    }
+    
+    // Chat sessions
+    match /chatSessions/{sessionId} {
+      allow read, create, update, delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
+    }
+    
+    // Default deny for everything else
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

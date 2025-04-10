@@ -1,0 +1,68 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Common function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if the file is within size limits
+    function isValidSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    // Check if the content type is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Check if the content type is allowed (images, documents, etc.)
+    function isAllowedType() {
+      return request.resource.contentType.matches('image/.*') || 
+             request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('text/plain');
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true;  // Everyone can see profile pictures
+      allow write: if isOwner(userId) && isImage() && isValidSize();
+    }
+    
+    // User uploaded images for chats
+    match /users/{userId}/uploads/{fileName} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isAllowedType() && isValidSize();
+    }
+    
+    // Chat message attachments
+    match /chats/{chatId}/attachments/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAllowedType() && isValidSize();
+    }
+    
+    // Shared files (visible to all users)
+    match /shared/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAllowedType() && isValidSize() && 
+                    !request.auth.token.firebase.sign_in_provider == 'anonymous'; // Only registered users
+    }
+    
+    // Screenshot temporary storage (for screen sharing analysis)
+    match /screenshots/{userId}/{fileName} {
+      allow read, write: if isOwner(userId) && isImage() && isValidSize();
+      // Auto-delete after 1 hour
+      // Note: This requires Cloud Functions to implement the auto-delete
+    }
+    
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
