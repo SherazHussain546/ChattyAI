@@ -25,13 +25,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-      if (user) {
-        loadChatHistory(user.uid);
-      } else {
-        setChatHistory([]);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        // If we have a Firebase user, verify with our server
+        if (firebaseUser) {
+          console.log("Firebase auth state changed: User logged in", firebaseUser.displayName);
+          
+          try {
+            // Get the ID token from Firebase
+            const idToken = await firebaseUser.getIdToken();
+            
+            // Call our server to validate the token and get the user data
+            const response = await fetch('/api/firebase-auth', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ idToken })
+            });
+            
+            if (response.ok) {
+              // Get the server-authenticated user
+              const userData = await response.json();
+              console.log("Server authentication successful on auth state change:", userData);
+              
+              // Set the user with both server and Firebase data
+              setUser({
+                ...userData,
+                firebaseUser // Keep the Firebase user object for Firebase operations
+              });
+              
+              // Load chat history
+              loadChatHistory(userData.id);
+            } else {
+              console.error("Failed to authenticate with server on auth state change");
+              setUser(null);
+              setChatHistory([]);
+            }
+          } catch (error) {
+            console.error("Error authenticating with server:", error);
+            // Just set the Firebase user as a fallback
+            setUser(firebaseUser);
+          }
+        } else {
+          // Firebase user is logged out
+          console.log("Firebase auth state changed: User logged out");
+          setUser(null);
+          setChatHistory([]);
+        }
+      } finally {
+        // Always set loading to false when done
+        setLoading(false);
       }
     });
 
@@ -40,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // Proceed directly with Google sign-in - no confirmation needed
+      // Proceed with Firebase Google sign-in
       console.log("Attempting Google Sign-In...");
       
       // Add additional scopes if needed
@@ -49,11 +93,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use signInWithPopup for better user experience
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Google Sign-In successful:", result.user.displayName);
+      console.log("Firebase Google Sign-In successful:", result.user.displayName);
+      
+      // Get the ID token from Firebase
+      const idToken = await result.user.getIdToken();
+      
+      // Call our backend API to authenticate with the Firebase token
+      const response = await fetch('/api/firebase-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ idToken })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to authenticate with server');
+      }
+      
+      // Get the user data from the response
+      const userData = await response.json();
+      console.log("Server authentication successful:", userData);
+      
+      // Update user state with the server-authenticated user
+      setUser({
+        ...userData,
+        firebaseUser: result.user // Keep the Firebase user object for Firebase operations
+      });
       
       // Load chat history for the signed-in user
-      await loadChatHistory(result.user.uid);
-      return result.user;
+      await loadChatHistory(userData.id);
+      
+      return userData;
     } catch (error) {
       console.error("Error signing in with Google:", error);
       
@@ -100,29 +172,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInAsGuest = async () => {
-    // Create a temporary user ID for guest access
-    const guestUser = {
-      uid: `guest_${Date.now()}`,
-      displayName: "Guest User",
-      isAnonymous: true
-    };
-    setUser(guestUser);
-    setChatHistory([]);
+    try {
+      console.log("Attempting guest sign-in...");
+      
+      // Call our backend API for guest login
+      const response = await fetch('/api/guest-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sign in as guest');
+      }
+      
+      // Get the user data from the response
+      const guestUser = await response.json();
+      console.log("Guest sign-in successful:", guestUser);
+      
+      // Update user state
+      setUser(guestUser);
+      setChatHistory([]);
+      
+      return guestUser;
+    } catch (error) {
+      console.error("Error signing in as guest:", error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
     try {
-      // Clear user data first
+      console.log("Signing out...");
+      
+      // Call our backend API for logout
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        console.warn("Server logout may have failed:", response.statusText);
+      } else {
+        console.log("Server logout successful");
+      }
+      
+      // Clear user data
       setUser(null);
       setChatHistory([]);
       
-      // Then sign out of Firebase if needed
+      // Also sign out from Firebase if needed
       if (auth.currentUser) {
         await firebaseSignOut(auth);
+        console.log("Firebase sign-out successful");
       }
       
-      console.log("User signed out successfully");
-      // Don't navigate here - navigation should be handled by the component that calls signOut
+      console.log("User completely signed out");
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;
