@@ -60,6 +60,17 @@ export class MemStorage implements IStorage {
     }
     return undefined;
   }
+
+  // Map to store Firebase UID to user ID mappings
+  private firebaseUidIndex: Map<string, string> = new Map();
+
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    const userId = this.firebaseUidIndex.get(firebaseUid);
+    if (userId) {
+      return this.users.get(userId);
+    }
+    return undefined;
+  }
   
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = String(this.userIdCounter++);
@@ -72,6 +83,11 @@ export class MemStorage implements IStorage {
     
     this.users.set(id, user);
     this.usernameIndex.set(user.username, id);
+    
+    // Store Firebase UID mapping if available
+    if (user.firebaseUid) {
+      this.firebaseUidIndex.set(user.firebaseUid, id);
+    }
     
     // Create default preferences
     this.preferences.set(id, {

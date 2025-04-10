@@ -53,6 +53,7 @@ export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   // Chat methods
@@ -126,6 +127,28 @@ export class FirebaseStorage implements IStorage {
       return undefined;
     } catch (error) {
       console.error("Error getting user by username:", error);
+      return undefined;
+    }
+  }
+  
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    try {
+      const usersRef = collection(db, USERS_COLLECTION);
+      const q = query(usersRef, where("firebaseUid", "==", firebaseUid));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+        return {
+          ...userData,
+          id: userDoc.id,
+          createdAt: userData.createdAt?.toDate() || new Date()
+        } as User;
+      }
+      return undefined;
+    } catch (error) {
+      console.error("Error getting user by Firebase UID:", error);
       return undefined;
     }
   }
