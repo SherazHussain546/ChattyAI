@@ -13,6 +13,7 @@ export const chatMessageSchema = z.object({
   content: z.string(),
   role: z.enum(["user", "assistant"]),
   userId: z.string(),
+  chatId: z.string().optional(),
   timestamp: z.string().or(z.date()),
   has_image: z.boolean().optional(),
 });
@@ -22,6 +23,7 @@ export const userPreferencesSchema = z.object({
   userId: z.string(),
   voiceEnabled: z.number().default(1),
   avatarEnabled: z.number().default(1),
+  activeChatSessionId: z.string().optional(),
 });
 
 // Insert Schemas

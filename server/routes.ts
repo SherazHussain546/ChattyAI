@@ -3,9 +3,9 @@ import { createServer, type Server } from "http";
 import { insertMessageSchema, insertPreferencesSchema, ChatMessage } from "@shared/schema";
 import { getChatResponse, getImageChatResponse, getStreamingChatResponse } from "./gemini";
 import { setupAuth } from "./auth";
-// No Firebase storage import - using local storage instead
+import { storage, ChatSession as StorageChatSession } from "./storage";
 
-// Local in-memory storage for messages and preferences until Firebase permissions are fixed
+// Import types for preferences and messages
 import { UserPreferences, InsertUserPreferences } from "@shared/schema";
 
 // Chat storage - enhanced to track chat threads/sessions
