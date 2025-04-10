@@ -4,7 +4,12 @@ import { z } from "zod";
 export const userSchema = z.object({
   id: z.string(),
   username: z.string(),
-  password: z.string(),
+  password: z.string().optional(),  // Optional for Firebase auth users
+  email: z.string().email().optional(), // Added for Firebase auth
+  displayName: z.string().optional(), // Added for Firebase auth
+  photoURL: z.string().optional(), // Added for Firebase auth
+  firebaseUid: z.string().optional(), // Used to link to Firebase auth
+  isAnonymous: z.boolean().optional(), // For guest users
   createdAt: z.date(),
 });
 
