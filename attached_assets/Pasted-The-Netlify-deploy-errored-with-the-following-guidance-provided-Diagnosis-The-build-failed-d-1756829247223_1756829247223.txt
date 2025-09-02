@@ -1,0 +1,92 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failed due to an error related to an invalid input for the `@netlify/plugin-nextjs` plugin.
+
+In line 59 of the logs, the error message indicates that the plugin does not accept the input "disable" that was specified in the configuration.
+
+**Solution:**
+1. Verify that the input name is spelled correctly and is included in the plugin's available configuration options.
+2. Since the input "disable" is not a valid configuration for the `@netlify/plugin-nextjs` plugin, it needs to be removed from the plugin configuration.
+
+To fix this issue:
+- Remove the "disable: true" configuration from the `@netlify/plugin-nextjs` plugin in the `netlify.toml` file.
+
+After removing the invalid input, commit the changes and trigger another build to check if the issue is resolved.
+
+The relevant error logs are:
+
+Line 0: build-image version: 24a1153d2167e2fd2b97bf41bcef5782eb23901a (noble)
+Line 1: buildbot version: e003b962686ea5d1e068eb508ce90ec3003c9b2b
+Line 2: Fetching cached dependencies
+Line 3: Failed to fetch cache, continuing with build
+Line 4: Starting to prepare the repo for build
+Line 5: No cached dependencies found. Cloning fresh repo
+Line 6: git clone --filter=blob:none https://github.com/SherazHussain546/ChattyAI
+Line 7: Preparing Git Reference refs/heads/main
+Line 8: Starting to install dependencies
+Line 9: Downloading and installing node v20.19.4...
+Line 10: Downloading https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz...
+Line 11: Computing checksum with sha256sum
+Line 12: Checksums matched!
+Line 13: Now using node v20.19.4 (npm v10.8.2)
+Line 47:   /opt/build/repo
+Line 48: [36m[1m​[22m[39m
+Line 49: [36m[1m❯ Config file[22m[39m
+Line 50:   /opt/build/repo/netlify.toml
+Line 51: [36m[1m​[22m[39m
+Line 52: [36m[1m❯ Context[22m[39m
+Line 53:   production
+Line 54: [36m[1m​[22m[39m
+Line 55: [36m[1m❯ Installing extensions[22m[39m
+Line 56:    - neon
+Line 57: Failed during stage 'building site': Build script returned non-zero exit code: 2
+Line 58: [91m[1m​[22m[39m
+Line 59: [91m[1mPlugin "@netlify/plugin-nextjs" invalid input "disable"       [22m[39m
+Line 60: [91m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 61: ​
+Line 62:   [31m[1mError message[22m[39m
+Line 63:   Plugin "@netlify/plugin-nextjs" does not accept any inputs but you specified: "disable"
+Line 64:   Check your plugin configuration to be sure that:
+Line 65:     - the input name is spelled correctly
+Line 66:     - the input is included in the plugin's available configuration options
+    - the plugin's input requirements have not chang
+Line 67:   Plugin inputs
+Line 68:   disable: true
+Line 69: ​
+Line 70:   [31m[1mPlugin details[22m[39m
+Line 71:   Package:        @netlify/plugin-nextjs
+Line 72:   Version:        5.12.1
+Line 73:   Repository:     git+https://github.com/opennextjs/opennextjs-netlify.git
+Line 74:   npm link:       https://www.npmjs.com/package/@netlify/plugin-nextjs
+Line 75:   Report issues:  https://github.com/opennextjs/opennextjs-netlify/issues
+Line 76: ​
+Line 77:   [31m[1mError location[22m[39m
+Line 78:   While loading "@netlify/plugin-nextjs" from netlify.toml
+Line 79: ​
+Line 80:   [31m[1mResolved config[22m[39m
+Line 81:   build:
+Line 82:     command: vite build
+Line 83:     commandOrigin: config
+Line 84:     environment:
+Line 85:       - FIREBASE_API_KEY
+Line 86:       - FIREBASE_APP_ID
+Line 87:       - FIREBASE_AUTH_DOMAIN
+Line 109:         - firebase
+Line 110:       node_bundler: esbuild
+Line 111:   functionsDirectory: /opt/build/repo/netlify/functions
+Line 112:   plugins:
+Line 113:     - inputs:
+Line 114:         disable: true
+Line 115:       origin: config
+Line 116:       package: "@netlify/plugin-nextjs"
+Line 117:   redirects:
+Line 118:     - from: /api/*
+      status: 200
+      to: /.netlify/functions/:splat
+    - from: /*
+      status: 200
+      to: /index.html
+Line 119: Build failed due to a user error: Build script returned non-zero exit code: 2
+Line 120: Failing build: Failed to build site
+Line 121: Finished processing build request in 1m8.813s
