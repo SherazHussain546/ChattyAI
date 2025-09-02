@@ -146,6 +146,21 @@ export async function getChatResponse(message: string, history: ChatMessage[] = 
     // Process the response
     const responseData = await response.json();
     
+    // Check for API errors first
+    if (responseData.error) {
+      console.error("Gemini API Error:", responseData.error);
+      
+      if (responseData.error.code === 429) {
+        return "⚠️ **API Quota Exceeded**: Your Gemini API has reached its usage limit. This typically resets daily or you can upgrade your plan at https://ai.google.dev/pricing. Please try again later or check your API quota in Google AI Studio.";
+      } else if (responseData.error.code === 403) {
+        return "🔑 **API Access Denied**: There's an issue with your Gemini API key permissions. Please check your API key settings in Google AI Studio.";
+      } else if (responseData.error.code === 400) {
+        return "❌ **Invalid Request**: The message couldn't be processed. Please try rephrasing your question or making it shorter.";
+      } else {
+        return `🚨 **API Error**: ${responseData.error.message || 'Unknown error occurred'}. Please try again later.`;
+      }
+    }
+    
     if (responseData.candidates && responseData.candidates[0] && 
         responseData.candidates[0].content && responseData.candidates[0].content.parts) {
       const responseText = responseData.candidates[0].content.parts[0].text;
