@@ -1,0 +1,21 @@
+[build]
+  command = "vite build"
+  functions = "netlify/functions"
+  publish = "dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  external_node_modules = ["@google/generative-ai", "firebase-admin", "firebase"]
+  node_bundler = "esbuild"
