@@ -1,0 +1,75 @@
+
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools react-dom.development.js:29895:17
+Initializing Firebase Storage for domain: 5a145eea-b626-42b9-bc8c-5bcfae1f2147-00-3g9nbm0mums33.kirk.replit.dev firebase.ts:42:13
+Setting up Firebase Storage for Replit domain firebase.ts:49:17
+Initializing Firebase Storage for domain: 5a145eea-b626-42b9-bc8c-5bcfae1f2147-00-3g9nbm0mums33.kirk.replit.dev firebase.ts:42:13
+Setting up Firebase Storage for Replit domain firebase.ts:49:17
+TypeError: can't access property "then", localStorage.setItem(...) is undefined
+inject.js:190:12
+Firebase auth state changed: User logged out use-auth.tsx:72:19
+Attempting Google Sign-In... use-auth.tsx:88:15
+Uncaught (in promise) TypeError: can't access property "includes", args.site.enabledFeatures is undefined
+    isFeatureBroken <anonymous code>:980
+    updateFeaturesInner <anonymous code>:9240
+    updateFeaturesInner <anonymous code>:9239
+    _open popup.ts:103
+    _openPopup popup_redirect.ts:85
+<anonymous code>:980:143
+Firebase auth state changed: User logged in Sheraz Hussain use-auth.tsx:32:19
+Firebase Google Sign-In successful: Sheraz Hussain use-auth.tsx:96:15
+Server authentication successful on auth state change: 
+Object { username: "user_1756825880909", displayName: "Sheraz Hussain", photoURL: "https://lh3.googleusercontent.com/a/ACg8ocKXTMtU6gewB8y71IdDjIPe4uhgYdIki4RwCaQ11Ll3zTQvsgY=s96-c", firebaseUid: "9L4Ncn8GDmX33A5bREsvlYbiix13", isAnonymous: false, id: "1", createdAt: "2025-09-02T15:11:20.909Z" }
+use-auth.tsx:50:23
+Loading chat history from: /api/messages use-auth.tsx:254:15
+ChatInterface received 0 messages 2 ChatInterface.tsx:47:13
+Server authentication successful: 
+Object { username: "user_1756825880909", displayName: "Sheraz Hussain", photoURL: "https://lh3.googleusercontent.com/a/ACg8ocKXTMtU6gewB8y71IdDjIPe4uhgYdIki4RwCaQ11Ll3zTQvsgY=s96-c", firebaseUid: "9L4Ncn8GDmX33A5bREsvlYbiix13", isAnonymous: false, id: "1", createdAt: "2025-09-02T15:11:20.909Z" }
+use-auth.tsx:117:15
+Loading chat history from: /api/messages use-auth.tsx:254:15
+ChatInterface received 0 messages 5 ChatInterface.tsx:47:13
+Sending message: 
+Object { content: "hi", role: "user", has_image: false, image_data: null }
+home.tsx:100:15
+Making API request to: /api/messages queryClient.ts:45:11
+ChatInterface received 0 messages 2 ChatInterface.tsx:47:13
+Received response: 
+Object { userMessage: {…}, aiMessage: {…} }
+home.tsx:103:15
+Message sent successfully, refreshing messages home.tsx:107:15
+Updated message cache with new messages: 5 6 home.tsx:121:17
+ChatInterface received 2 messages ChatInterface.tsx:47:13
+First message: hi... ChatInterface.tsx:49:15
+Last message: Hi there! How can I help you t... ChatInterface.tsx:50:15
+Message 1/2 (user): hi... ChatInterface.tsx:54:17
+Message 2/2 (assistant): Hi there! How can I help you t... ChatInterface.tsx:54:17
+ChatInterface received 2 messages ChatInterface.tsx:47:13
+First message: hi... ChatInterface.tsx:49:15
+Last message: Hi there! How can I help you t... ChatInterface.tsx:50:15
+Message 1/2 (user): hi... ChatInterface.tsx:54:17
+Message 2/2 (assistant): Hi there! How can I help you t... ChatInterface.tsx:54:17
+Sending message: 
+Object { content: "can you help me write an article", role: "user", has_image: false, image_data: null }
+home.tsx:100:15
+Making API request to: /api/messages queryClient.ts:45:11
+ChatInterface received 2 messages ChatInterface.tsx:47:13
+First message: hi... ChatInterface.tsx:49:15
+Last message: Hi there! How can I help you t... ChatInterface.tsx:50:15
+Message 1/2 (user): hi... ChatInterface.tsx:54:17
+Message 2/2 (assistant): Hi there! How can I help you t... ChatInterface.tsx:54:17
+Received response: 
+Object { userMessage: {…}, aiMessage: {…} }
+home.tsx:103:15
+Message sent successfully, refreshing messages home.tsx:107:15
+Updated message cache with new messages: 7 8 home.tsx:121:17
+ChatInterface received 4 messages ChatInterface.tsx:47:13
+First message: hi... ChatInterface.tsx:49:15
+Last message: I apologize, but I encountered... ChatInterface.tsx:50:15
+Message 1/4 (user): hi... ChatInterface.tsx:54:17
+Message 2/4 (assistant): Hi there! How can I help you t... ChatInterface.tsx:54:17
+Message 3/4 (user): can you help me write an artic... ChatInterface.tsx:54:17
+Message 4/4 (assistant): I apologize, but I encountered... ChatInterface.tsx:54:17
+ChatInterface received 4 messages ChatInterface.tsx:47:13
+Message 8/8 (assistant): I apologize, but I encountered... ChatInterface.tsx:54:17
+
+​
+
