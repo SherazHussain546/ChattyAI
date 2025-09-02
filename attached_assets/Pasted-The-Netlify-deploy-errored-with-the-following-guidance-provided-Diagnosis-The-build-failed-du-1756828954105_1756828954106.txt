@@ -1,0 +1,86 @@
+The Netlify deploy errored, with the following guidance provided:
+
+### Diagnosis
+The build failed due to an error in the Netlify plugin "@netlify/plugin-nextjs" with the following details:
+- Error message: "Your publish directory does not contain expected Next.js build output. Please check your build settings"
+- Error location: In "onBuild" event in "@netlify/plugin-nextjs"
+
+### Solution
+1. Verify that your Next.js project has been built successfully and the build output is located in the correct directory.
+2. Ensure that the Next.js build output directory is correctly specified in your Netlify build settings.
+
+If the build output directory is correct and the issue persists:
+- Check the plugin configuration to ensure it is set up correctly for Next.js projects.
+- Verify that the necessary Next.js build steps are being executed during the build process.
+
+It seems there might be a misconfiguration or issue with the build output path or the plugin setup for Next.js. Double-checking these configurations should help resolve the error.
+
+The relevant error logs are:
+
+Line 0: build-image version: 24a1153d2167e2fd2b97bf41bcef5782eb23901a (noble)
+Line 1: buildbot version: e003b962686ea5d1e068eb508ce90ec3003c9b2b
+Line 2: Fetching cached dependencies
+Line 3: Failed to fetch cache, continuing with build
+Line 4: Starting to prepare the repo for build
+Line 5: No cached dependencies found. Cloning fresh repo
+Line 6: git clone --filter=blob:none https://github.com/SherazHussain546/ChattyAI
+Line 7: Preparing Git Reference refs/heads/main
+Line 8: Starting to install dependencies
+Line 9: Downloading and installing node v20.19.4...
+Line 10: Downloading https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz...
+Line 11: Computing checksum with sha256sum
+Line 12: Checksums matched!
+Line 13: Now using node v20.19.4 (npm v10.8.2)
+Line 78: [2m../dist/public/[22m[2massets/[22m[36mindex-PUQBk9Ua.js   [39m[1m[33m724.72 kB[39m[22m[2m │ gzip: 207.56 kB[22m
+Line 79: [33m
+Line 80: (!) Some chunks are larger than 500 kB after minification. Consider:
+Line 81: - Using dynamic import() to code-split the application
+Line 82: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchun
+Line 83: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+Line 84: [32m✓ built in 3.67s[39m
+Line 85: ​
+Line 86: [90m(build.command completed in 4.1s)[39m
+Line 87: [91m[1m​[22m[39m
+Line 88: [91m[1mPlugin "@netlify/plugin-nextjs" failed                        [22m[39m
+Line 89: [91m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 90: ​
+Line 91:   [31m[1mError message[22m[39m
+Line 92:   Error: Your publish directory does not contain expected Next.js build output. Please check your build settings
+Line 93: ​
+Line 94:   [31m[1mPlugin details[22m[39m
+Line 95:   Package:        @netlify/plugin-nextjs
+Line 96:   Version:        5.12.1
+Line 97:   Repository:     git+https://github.com/opennextjs/opennextjs-netlify.git
+Line 98:   npm link:       https://www.npmjs.com/package/@netlify/plugin-nextjs
+Line 99:   Report issues:  https://github.com/opennextjs/opennextjs-netlify/issues
+Line 100: ​
+Line 101:   [31m[1mError location[22m[39m
+Line 102:   In "onBuild" event in "@netlify/plugin-nextjs" from Netlify app
+Line 103: ​
+Line 104:   [31m[1mResolved config[22m[39m
+Line 105:   build:
+Line 106:     command: vite build
+Line 107:     commandOrigin: config
+Line 108:     environment:
+Line 109:       - FIREBASE_API_KEY
+Line 110:       - FIREBASE_APP_ID
+Line 111:       - FIREBASE_AUTH_DOMAIN
+Line 129:         - firebase-admin
+Line 130:         - firebase
+Line 131:       node_bundler: esbuild
+Line 132:   functionsDirectory: /opt/build/repo/netlify/functions
+Line 133:   plugins:
+Line 134:     - inputs: {}
+Line 135:       origin: ui
+Line 136:       package: "@netlify/plugin-nextjs"
+Line 137:   redirects:
+Line 138:     - from: /api/*
+      status: 200
+      to: /.netlify/functions/:splat
+    - from: /*
+      status: 200
+      to: /index.html
+Line 139: Build failed due to a user error: Build script returned non-zero exit code: 2
+Line 140: Failed during stage 'building site': Build script returned non-zero exit code: 2
+Line 141: Failing build: Failed to build site
+Line 142: Finished processing build request in 1m4.697s
