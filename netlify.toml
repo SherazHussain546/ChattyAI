@@ -1,6 +1,6 @@
 # Vite + React application configuration for Netlify
 [build]
-  command = "vite build"
+  command = "npm run build"
   functions = "netlify/functions"
   publish = "dist/public"
 
@@ -8,8 +8,6 @@
   NODE_VERSION = "20"
   # Disable framework auto-detection to prevent Next.js plugin
   NETLIFY_SKIP_FRAMEWORK_DETECTION = "true"
-  # Explicitly set framework to prevent auto-detection
-  NETLIFY_FRAMEWORK = "vite"
 
 # Disable automatic framework detection since this is a Vite app, not Next.js
 [build.processing]
