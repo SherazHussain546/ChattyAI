@@ -15,11 +15,6 @@
 [build.processing]
   skip_processing = false
 
-# Explicitly disable Next.js plugin
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    disable = true
 
 [[redirects]]
   from = "/api/*"
