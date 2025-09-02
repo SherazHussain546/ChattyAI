@@ -1,3 +1,4 @@
+# Vite + React application configuration for Netlify
 [build]
   command = "vite build"
   functions = "netlify/functions"
@@ -5,6 +6,18 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Disable framework auto-detection
+  NETLIFY_SKIP_FRAMEWORK_DETECTION = "true"
+
+# Disable automatic framework detection since this is a Vite app, not Next.js
+[build.processing]
+  skip_processing = false
+
+# Explicitly disable Next.js plugin
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    disable = true
 
 [[redirects]]
   from = "/api/*"
