@@ -286,5 +286,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-Sheraz Hussain - [sheraz.ie21@gmail.com](mailto:sheraz.ie21@gmail.com)
-Project Link: [https://github.com/SherazHussain546/ChattyAIProject](https://github.com/SherazHussain546/ChattyAIProject)
+Sheraz Hussain - [sherazhussainofficial1@gmail.com](mailto:sherazhussainofficial1@gmail.com)
+Project Link: [https://github.com/SherazHussain546/ChattyAIProject](https://github.com/SherazHussain546/ChattyAI)
