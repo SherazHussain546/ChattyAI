@@ -6,12 +6,20 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Disable framework auto-detection
+  # Disable framework auto-detection to prevent Next.js plugin
   NETLIFY_SKIP_FRAMEWORK_DETECTION = "true"
+  # Explicitly set framework to prevent auto-detection
+  NETLIFY_FRAMEWORK = "vite"
 
 # Disable automatic framework detection since this is a Vite app, not Next.js
 [build.processing]
   skip_processing = false
+
+# Explicitly disable Next.js plugin
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    disable = true
 
 [[redirects]]
   from = "/api/*"
